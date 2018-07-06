@@ -16,14 +16,16 @@ mod point2;
 mod random;
 mod sdl_rendering;
 
-
+use point2::*;
+use board::*;
 
 fn main() {
 //    let pillar_bytes = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/pillar.png"));
 //    let charset_bytes =include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/charset.png"));
 //    let image = image::load(std::io::Cursor::new(&pillar_bytes[..]), image::PNG).unwrap().to_rgba();
 //    let image_dimensions = image.dimensions();
-
+    let cell_size = [32, 32];
+    let cell_padding = [2, 2];
     let key_bindings: std::collections::HashMap<sdl2::keyboard::Keycode, input::Buttons> = hashmap!{
         sdl2::keyboard::Keycode::Left => input::Buttons::Left,
         sdl2::keyboard::Keycode::Right => input::Buttons::Right,
@@ -36,7 +38,7 @@ fn main() {
 
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
-    let window = video_subsystem.window("PILLARS!", 800, 600).position_centered().build().unwrap();
+    let window = video_subsystem.window("PILLARS!", 600, 600).position_centered().build().unwrap();
     let mut event_pump = sdl_context.event_pump().unwrap();
     let mut canvas = window.into_canvas().present_vsync().build().unwrap();
     let texture_creator = canvas.texture_creator();
@@ -44,10 +46,7 @@ fn main() {
     let mut game_data = game::GameData::default();
     let mut input_state = input::InputState::default();
     let mut ticks = 0;
-    let cell_size = [32, 32];
-    let cell_padding = [2, 2];
     'game_loop: loop {
-
         ticks += 1;
         if game_data.game_over {
             let high_score = if game_data.score > game_data.high_score { game_data.score } else { game_data.high_score };
@@ -68,7 +67,8 @@ fn main() {
         canvas.set_draw_color(sdl2::pixels::Color::RGB(77, 77, 128));
         canvas.clear();
         canvas.set_draw_color(sdl2::pixels::Color::RGB(255, 255, 255));
-        canvas.fill_rect(sdl2::rect::Rect::new(100, 100, 600, 400));
+        canvas.fill_rect(sdl2::rect::Rect::new(100, 100, (game_data.board.width() as u32) * (cell_size[0] + cell_padding[0]), 400));
+
         sdl_rendering::draw_board(&mut canvas, &game_data.board, game_data.current_column, [100, 100], cell_size, cell_padding);
         canvas.present();
         std::thread::sleep(std::time::Duration::from_millis(1000 / 60));
