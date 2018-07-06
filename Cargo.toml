@@ -1,0 +1,9 @@
+[package]
+name = "pillars_sdl"
+version = "0.1.0"
+authors = ["David Curthoys <david.curthoys@googlemail.com>"]
+
+[dependencies]
+sdl2 = "0.31"
+image = "*"
+rand = "*"
