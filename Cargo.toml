@@ -7,3 +7,4 @@ authors = ["David Curthoys <david.curthoys@googlemail.com>"]
 sdl2 = "0.31"
 image = "*"
 rand = "*"
+maplit = "*"

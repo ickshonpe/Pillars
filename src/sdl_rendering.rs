@@ -15,15 +15,28 @@ fn float_color_to_rgb(color: graphics::Color) -> Color {
     Color::RGB(r, g, b)
 }
 
-fn draw_board<T: RenderTarget>(mut canvas: &mut Canvas<T>, board: &Board, target: [i32; 2], tile_size: [u32; 2]) {
+pub fn draw_board<T: RenderTarget>(
+    mut canvas: &mut Canvas<T>,
+    board: &Board,
+    column: ::columns::Column,
+    target: [i32; 2],
+    tile_size: [u32; 2],
+    tile_padding: [u32; 2]) {
     for x in 0..board.width() {
         for y in 0..board.height() {
             if let Some(jewel) = board[x][y] {
-                let dest_x = (x as u32 * tile_size[0]) as i32 + target[0];
-                let dest_y = (y as u32 * tile_size[1]) as i32 + target[1];
+                let dest_x = (x as u32 * tile_size[0] + tile_padding[0]) as i32 + target[0];
+                let dest_y = (y as u32 * tile_size[1] + tile_padding[1]) as i32 + target[1];
                 draw_jewel(&mut canvas,[dest_x, dest_y], tile_size, jewel);
             }
         }
+    }
+    let mut p = column.position;
+    for i in 0..3 {
+        let dest_x = (p.x as u32 * tile_size[0] + tile_padding[0]) as i32 + target[0];
+        let dest_y = (p.y as u32 * tile_size[1] + tile_padding[1]) as i32 + target[1];
+        draw_jewel(&mut canvas, [dest_x, dest_y],tile_size, column.jewels[i]);
+        p.up();
     }
 }
 
@@ -31,5 +44,6 @@ fn draw_jewel<T: RenderTarget>(canvas: &mut Canvas<T>, target: [i32; 2], size: [
     let color = float_color_to_rgb(jewel.color_gl());
     let rect = Rect::new(target[0], target[1], size[0], size[1]);
     canvas.set_draw_color(color);
-    canvas.fill_rect(rect);
+    let _ = canvas.fill_rect(rect);
 }
+

@@ -14,7 +14,7 @@ pub enum GameState {
 }
 
 pub struct GameData {
-    pub game_board: Board,
+    pub board: Board,
     min_gem_line_length: usize,
     column_spawn_point: P2,
     pub next_column: Column,
@@ -43,7 +43,7 @@ pub struct GameData {
 impl Default for GameData {
     fn default() -> Self {
         GameData {
-            game_board: Board::new(7, 13),
+            board: Board::new(7, 13),
             min_gem_line_length: 3,
             column_spawn_point: P2::new(3, 10),
             next_column: Column::new(P2::new(3, 10)),
@@ -72,7 +72,7 @@ impl Default for GameData {
 
 use input::Buttons;
 pub fn update_game(game_data: &mut GameData, input: &InputState, time_delta: f64) {
-    let game_board = &mut game_data.game_board;
+    let game_board = &mut game_data.board;
     game_data.drop_cool_down  += time_delta;
     game_data.move_cool_down -= time_delta;
     game_data.rotate_cool_down -= time_delta;
@@ -154,7 +154,7 @@ pub fn update_game(game_data: &mut GameData, input: &InputState, time_delta: f64
         GameState::Matching(time_left) => {
             if time_left < 0.0 {
                 for p in &game_data.matches {
-                    game_data.score_accumulator += game_data.score_accumulator + (game_data.level + 1);
+                    game_data.score_accumulator += game_data.level + 1;
                     game_board[*p] = None;
                     game_data.game_state = GameState::Dropped;
                 }
