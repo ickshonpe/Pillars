@@ -3,6 +3,8 @@ extern crate sdl2;
 extern crate image;
 extern crate rand;
 #[macro_use] extern crate maplit;
+extern crate gl;
+
 mod board;
 mod board_analysis;
 mod board_partitioning;
@@ -18,6 +20,7 @@ mod sdl_rendering;
 
 use point2::*;
 use board::*;
+
 
 fn main() {
 //    let pillar_bytes = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/pillar.png"));
@@ -38,10 +41,26 @@ fn main() {
 
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
-    let window = video_subsystem.window("PILLARS!", 600, 600).position_centered().build().unwrap();
+
+    let gl_attr = video_subsystem.gl_attr();
+
+    gl_attr.set_context_profile(sdl2::video::GLProfile::Core);
+    gl_attr.set_context_version(3, 3);
+
+    let window =
+        video_subsystem
+            .window("PILLARS!", 600, 600)
+            .opengl()
+            .position_centered()
+            .build()
+            .unwrap();
+    let gl_context = window.gl_create_context().unwrap();
+    let _ = gl::load_with(|s| video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void);
+    
+
+
     let mut event_pump = sdl_context.event_pump().unwrap();
     let mut canvas = window.into_canvas().present_vsync().build().unwrap();
-    let texture_creator = canvas.texture_creator();
 
     let mut game_data = game::GameData::default();
     let mut input_state = input::InputState::default();
@@ -56,7 +75,7 @@ fn main() {
 
         input_state.store_current();
         for event in event_pump.poll_iter() {
-            events::process_sdl_event(event, &mut input_state, &key_bindings);
+            events::process_sdl_event(&event, &mut input_state, &key_bindings);
         }
         if input_state.down(input::Buttons::Quit) {
             break 'game_loop;
@@ -66,13 +85,13 @@ fn main() {
 
         canvas.set_draw_color(sdl2::pixels::Color::RGB(77, 77, 128));
         canvas.clear();
-        canvas.set_draw_color(sdl2::pixels::Color::RGB(255, 255, 255));
-        canvas.fill_rect(sdl2::rect::Rect::new(100, 100, (game_data.board.width() as u32) * (cell_size[0] + cell_padding[0]), 400));
+        canvas.set_draw_color(sdl2::pixels::Color::RGB(210, 195, 195));
+        let _ = canvas.fill_rect(sdl2::rect::Rect::new(100, 100 + 32, (game_data.board.width() as u32) * (cell_size[0] + cell_padding[0]) + cell_padding[0], 400));
 
         sdl_rendering::draw_board(&mut canvas, &game_data.board, game_data.current_column, [100, 100], cell_size, cell_padding);
         canvas.present();
         std::thread::sleep(std::time::Duration::from_millis(1000 / 60));
-
-
     }
+
+
 }

@@ -6,7 +6,7 @@ use input::Buttons;
 use sdl2::keyboard::Keycode;
 
 pub fn process_sdl_event(
-    event: sdl2::event::Event,
+    event: &sdl2::event::Event,
     input_state: &mut InputState,
     key_bindings: &std::collections::HashMap<Keycode, Buttons> ) {
     match event {
