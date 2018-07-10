@@ -66,6 +66,12 @@ pub struct Program {
     id: GLuint
 }
 
+impl Program {
+    pub fn id(&self) -> GLuint {
+        self.id
+    }
+}
+
 pub fn link_program(shaders: &[Shader]) -> Result<Program, String> {
     unsafe {
         let program = Program { id: gl::CreateProgram() };
@@ -108,4 +114,38 @@ impl Drop for Program {
             gl::DeleteProgram(self.id);
         }
     }
+}
+
+use graphics::Matrix4;
+pub fn ortho2d(matrix: &mut Matrix4, left: f32, right: f32, bottom: f32, top: f32) {
+    let zNear = -1.0f32;
+    let zFar = 1.0f32;
+    let inv_z = 1.0f32 / (zFar - zNear);
+    let inv_y = 1.0f32 / (top - bottom);
+    let inv_x = 1.0f32 / (right - left);
+    
+    //first column
+    matrix[0] = 2.0*inv_x;
+    matrix[1] = 0.0;
+    matrix[2] = 0.0;
+    matrix[3] = 0.0;
+
+    //second
+    matrix[4] = 0.0;
+    matrix[5] = 2.0*inv_y;
+    matrix[6] = 0.0;
+    matrix[7] = 0.0;
+
+    //third
+    matrix[8] = 0.0;
+    matrix[9] = 0.0;
+    matrix[10] = -2.0*inv_z;
+    matrix[11] = 0.0;
+
+    //fourth
+    matrix[12] = -(right + left)*inv_x;
+    matrix[13] = -(top + bottom)*inv_y;
+    matrix[14] = -(zFar + zNear)*inv_z;
+    matrix[15] = 1.0;
+
 }

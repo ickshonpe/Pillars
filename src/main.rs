@@ -3,7 +3,8 @@ extern crate sdl2;
 extern crate image;
 extern crate rand;
 #[macro_use] extern crate maplit;
-extern crate gl;
+//extern crate gl;
+
 
 mod board;
 mod board_analysis;
@@ -11,6 +12,7 @@ mod board_partitioning;
 mod columns;
 mod events;
 mod game;
+mod gl;
 mod gl_rendering;
 mod graphics;
 mod gravity;
@@ -27,10 +29,10 @@ use board::*;
 fn main() {
 
 
-//    let pillar_bytes = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/pillar.png"));
-//    let charset_bytes =include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/charset.png"));
-//    let image = image::load(std::io::Cursor::new(&pillar_bytes[..]), image::PNG).unwrap().to_rgba();
-//    let image_dimensions = image.dimensions();
+    let pillar_bytes = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/pillar.png"));
+    let charset_bytes =include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/charset.png"));
+    let image = image::load(std::io::Cursor::new(&pillar_bytes[..]), image::PNG).unwrap().to_rgba();
+    let image_dimensions = image.dimensions();
     let cell_size = [32, 32];
     let cell_padding = [2, 2];
     let key_bindings: std::collections::HashMap<sdl2::keyboard::Keycode, input::Buttons> = hashmap!{
@@ -42,11 +44,14 @@ fn main() {
         sdl2::keyboard::Keycode::Escape => input::Buttons::Quit
     };
 
-    let vertices: Vec<f32> = vec![
-        -0.5, -0.5, 0.0,
-        0.5, -0.5, 0.0,
-        0.0, 0.5, 0.0
+    let vertices: Vec<graphics::Vertex3> = vec![
+        [-0.5, -0.5, 0.0],
+        [0.5, -0.5, 0.0],
+        [0.0, 0.5, 0.0]
     ];
+
+
+
 
 
 
@@ -84,7 +89,7 @@ fn main() {
         gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
         gl::BufferData(
             gl::ARRAY_BUFFER,
-            (vertices.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr,
+            (vertices.len() * std::mem::size_of::<graphics::Vertex3>()) as gl::types::GLsizeiptr,
             vertices.as_ptr() as *const gl::types::GLvoid,
             gl::STATIC_DRAW
         );
@@ -99,7 +104,7 @@ fn main() {
             3,
             gl::FLOAT,
             gl::FALSE,
-            (3 * std::mem::size_of::<f32>()) as gl::types::GLsizei,
+            (std::mem::size_of::<graphics::Vertex3>()) as gl::types::GLsizei,
             std::ptr::null()
         );
         gl::BindBuffer(gl::ARRAY_BUFFER, 0);
@@ -109,12 +114,65 @@ fn main() {
     }
 
     let shaders= [
-        gl_rendering::Shader::from_str(shaders::VERTEX_SHADER, gl::VERTEX_SHADER).unwrap(),
-        gl_rendering::Shader::from_str(shaders::FRAGMENT_SHADER, gl::FRAGMENT_SHADER).unwrap()
+        gl_rendering::Shader::from_str(shaders::TRIANGLE_VERTEX_SHADER_SRC, gl::VERTEX_SHADER).unwrap(),
+        gl_rendering::Shader::from_str(shaders::TRIANGLE_FRAGMENT_SHADER_SRC, gl::FRAGMENT_SHADER).unwrap()
     ];
+
     let shader_program = gl_rendering::link_program(&shaders).unwrap();
     gl_rendering::use_program(&shader_program);
-    
+
+    let shaders_2d = [
+        gl_rendering::Shader::from_str(shaders::VERTEX_SHADER_SRC, gl::VERTEX_SHADER).unwrap(),
+        gl_rendering::Shader::from_str(shaders::FRAGMENT_SHADER_SRC, gl::FRAGMENT_SHADER).unwrap(),
+    ];
+
+    let shader_program_2d = gl_rendering::link_program(&shaders_2d).unwrap();
+
+
+    let mut projection_matrix = graphics::get_orthogonal_camera_matrix([600.,600.],[0.,0.]);
+    unsafe {
+        let camera_matrix_ref = gl::GetUniformLocation(shader_program_2d.id(), b"camera_matrix\0".as_ptr() as *const i8);
+        gl::UniformMatrix4fv(camera_matrix_ref, 1, gl::FALSE, projection_matrix.as_ptr());
+        let color_ref = gl::GetUniformLocation( shader_program_2d.id(), b"v_color\0".as_ptr() as *const i8);
+        gl::Uniform4fv(color_ref, 1, graphics::RED.as_ptr());
+    }
+
+    use gl::types::*;
+    let mut new_vbo: GLuint = 0;
+    let mut new_vao: GLuint = 0;
+    unsafe {
+        let vertices_2d: Vec<graphics::Vertex2> = vec![
+            [100.0, 100.0],
+            [200., 100.],
+            [150., 200.]
+        ];
+
+        gl::GenBuffers(1, &mut new_vbo);
+        gl::BindBuffer( gl::ARRAY_BUFFER, new_vbo);
+        gl::BufferData(
+          gl::ARRAY_BUFFER,
+          (vertices_2d.len() as isize * std::mem::size_of::<graphics::Vertex2>() as GLsizeiptr),
+           vertices_2d.as_ptr() as *const GLvoid,
+            gl::STATIC_DRAW
+        );
+        gl::BindBuffer(gl::ARRAY_BUFFER, 0);
+        gl::GenVertexArrays(1, &mut new_vao);
+        gl::BindVertexArray(new_vao);
+        gl::EnableVertexAttribArray(0);
+        gl::VertexAttribPointer(
+            0,
+            2,
+            gl::FLOAT,
+            gl::FALSE,
+            std::mem::size_of::<graphics::Vertex2>() as GLsizei,
+            std::ptr::null()
+        );
+        gl::BindBuffer(gl::ARRAY_BUFFER, 0);
+        gl::BindVertexArray(0);
+    }
+
+
+
     'game_loop: loop {
 //        ticks += 1;
 //        if game_data.game_over {
@@ -144,9 +202,13 @@ fn main() {
 
             gl::Clear(gl::COLOR_BUFFER_BIT);
 
+            gl_rendering::use_program(&shader_program);
             gl::BindVertexArray(vao);
             gl::DrawArrays(gl::TRIANGLES, 0, 3);
 
+            gl_rendering::use_program(&shader_program_2d);
+            gl::BindVertexArray(new_vao);
+            gl::DrawArrays(gl::TRIANGLES, 0, 3);
 
         }
 
