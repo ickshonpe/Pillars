@@ -2,22 +2,23 @@ pub const TRIANGLE_VERTEX_SHADER_SRC: &'static str = r#"
 #version 330 core
 
 //layout (location = 0) in vec3 Position;
-in vec3 Position;
+in vec2 Position;
 
 void main()
 {
-    gl_Position = vec4(Position, 1.0);
+    gl_Position = vec4(Position, 0.0, 1.0);
 }
 "#;
 
 pub const TRIANGLE_FRAGMENT_SHADER_SRC: &'static str = r#"
 #version 330 core
 
+uniform vec4 v_color;
 out vec4 Color;
 
 void main()
 {
-    Color = vec4(1.0f, 0.5f, 0.2f, 1.0f);
+    Color = v_color;
 }
 "#;
 
@@ -41,8 +42,8 @@ pub const FRAGMENT_SHADER_SRC: &'static str = r#"
     out vec4 color;
 
     void main() {
-        //color = v_color;
-          color = vec4(1.0f, 1.0f, 1.0f, 1.0f);
+        color = v_color;
+
     }
 "#;
 
