@@ -205,7 +205,7 @@ fn main() {
         gl_rendering::draw_column(
             &mut board_vertices,
             columns::Column { position: P2 { x: next_column.position.x + 5, y: next_column.position.y - 3}, ..next_column },
-            target,
+            [target[0] + cell_size[0] * 0.25, target[1] + cell_size[1] * 0.25],
             cell_size,
             cell_padding);
 
