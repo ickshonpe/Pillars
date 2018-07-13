@@ -1,80 +1,36 @@
-pub const TRIANGLE_VERTEX_SHADER_SRC: &'static str = r#"
-#version 330 core
-
-//layout (location = 0) in vec3 Position;
-in vec2 Position;
-
-void main()
-{
-    gl_Position = vec4(Position, 0.0, 1.0);
-}
-"#;
-
-pub const TRIANGLE_FRAGMENT_SHADER_SRC: &'static str = r#"
-#version 330 core
-
-uniform vec4 v_color;
-out vec4 Color;
-
-void main()
-{
-    Color = v_color;
-}
-"#;
-
-
 pub const VERTEX_SHADER_SRC: &'static str = r#"
     #version 330 core
 
     in vec2 position;
+    in vec2 tex_pos;
+    in vec4 v_color;
 
     uniform mat4 camera_matrix;
 
+    out VS_OUTPUT {
+        vec2 tex_pos;
+        vec4 v_color;
+    } OUT;
+
     void main() {
-        gl_Position = camera_matrix * vec4(position, 0.0, 1.0);
+        gl_Position = camera_matrix * vec4(position.xy, 0.0, 1.0);
+        OUT.tex_pos = tex_pos;
+        OUT.v_color = v_color;
     }
 "#;
 
 pub const FRAGMENT_SHADER_SRC: &'static str = r#"
     #version 330 core
 
-    uniform vec4 v_color;
+    in VS_OUTPUT {
+        vec2 tex_pos;
+        vec4 v_color;
+    } IN;
+
+    uniform sampler2D tex;    
     out vec4 color;
 
-    void main() {
-        color = v_color;
-
+    void main() {    
+        color = texture2D(tex, IN.tex_pos) * IN.v_color;
     }
 "#;
-
-pub const TEXTURED_VERTEX_SHADER_SRC: &'static str = r#"
-    #version 140
-
-    in vec2 position;
-    in vec2 tex_coords;
-    out vec2 v_tex_coords;
-
-    uniform mat4 camera_matrix;
-
-    void main() {
-        v_tex_coords = tex_coords;
-
-        gl_Position = camera_matrix * vec4(position, 0.0, 1.0);
-    }
-"#;
-
-pub const TEXTURED_FRAGMENT_SHADER_SRC: &'static str = r#"
-    #version 140
-
-    in vec2 v_tex_coords;
-    uniform vec4 v_color;
-    uniform sampler2D tex;
-    out vec4 color;
-
-    void main() {
-        vec4 temp = texture2D(tex, v_tex_coords);
-        vec4 temp2 = temp * v_color;
-        color = temp2; // texture2D(tex, v_tex_coords);
-    }
-"#;
-

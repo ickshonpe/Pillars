@@ -62,19 +62,19 @@ pub fn compile_shader(shader_source: &CStr, shader_type: GLuint) -> Result<Shade
     }
 }
 
-pub struct Program {
+pub struct ShaderProgram {
     id: GLuint
 }
 
-impl Program {
+impl ShaderProgram {
     pub fn id(&self) -> GLuint {
         self.id
     }
 }
 
-pub fn link_program(shaders: &[Shader]) -> Result<Program, String> {
+pub fn link_program(shaders: &[Shader]) -> Result<ShaderProgram, String> {
     unsafe {
-        let program = Program { id: gl::CreateProgram() };
+        let program = ShaderProgram { id: gl::CreateProgram() };
         for shader in shaders {
             gl::AttachShader(program.id, shader.id);
         }
@@ -102,19 +102,34 @@ pub fn link_program(shaders: &[Shader]) -> Result<Program, String> {
     }
 }
 
-pub fn use_program(program: &Program) {
+pub fn use_program(program: &ShaderProgram) {
     unsafe {
         gl::UseProgram(program.id);
     }
 }
 
-impl Drop for Program {
+impl Drop for ShaderProgram {
     fn drop(&mut self) {
         unsafe {
             gl::DeleteProgram(self.id);
         }
     }
 }
+
+impl ShaderProgram {
+    pub fn use_program(&self) {
+        unsafe {
+            gl::UseProgram(self.id);
+        }
+    }
+
+    pub fn get_uniform(&self, name: &CStr) -> GLint {
+        unsafe {
+            gl::GetUniformLocation(self.id, name.as_ptr() as *const GLchar)
+        }
+    }
+}
+
 
 use graphics::Matrix4;
 pub fn ortho2d(matrix: &mut Matrix4, left: f32, right: f32, bottom: f32, top: f32) {

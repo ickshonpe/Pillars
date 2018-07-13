@@ -36,7 +36,7 @@ pub struct GameData {
     pub game_state: GameState,
     pub matches: HashSet<P2>,
     pub game_over: bool,
-    pub last_accumalated_score: u64
+    pub last_accumulated_score: u64
 
 }
 
@@ -64,7 +64,7 @@ impl Default for GameData {
             matching_time: 0.3,
             game_state: GameState::Playing,
             matches: HashSet::new(),
-            last_accumalated_score: 0,
+            last_accumulated_score: 0,
             game_over: false
         }
     }
@@ -140,7 +140,9 @@ pub fn update_game(game_data: &mut GameData, input: &InputState, time_delta: f64
                 if game_data.matches.is_empty() {
                         game_data.game_state = GameState::Playing;
                         game_data.score += game_data.score_accumulator;
-                        game_data.last_accumalated_score = game_data.score_accumulator;
+                        if 0 < game_data.score_accumulator {
+                            game_data.last_accumulated_score = game_data.score_accumulator;
+                        }
                         game_data.score_accumulator = 0;
                         game_data.current_column = game_data.next_column;
                         game_data.next_column = Column::new(game_data.column_spawn_point);

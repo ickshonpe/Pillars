@@ -9,18 +9,18 @@ pub const RED: [f32; 4] = [1.0, 0.0, 0.0, 1.0];
 pub const BLUE: [f32; 4] = [0.0, 0.0, 1.0, 1.0];
 pub const GREEN: [f32; 4] = [0.0, 1.0, 0.0, 1.0];
 pub const YELLOW: [f32; 4] = [1.0, 1.0, 0.0, 1.0];
-pub const ORANGE: [f32; 4] = [1.0, 0.2, 0.0, 1.0];
+pub const ORANGE: [f32; 4] = [1.0, 0.4, 0.0, 1.0];
 
 
 
 #[repr(C, packed)]
-pub struct CVertex2(Vertex2, Color);
+pub struct CVertex2(pub Vertex2, pub Color);
 
 #[repr(C, packed)]
-pub struct TCVertex2(Vertex2, Vertex2, Color);
+pub struct TCVertex2(pub Vertex2, pub Vertex2, pub Color);
 
 #[repr(C, packed)]
-pub struct TVertex2(Vertex2, Vertex2);
+pub struct TVertex2(pub Vertex2, pub Vertex2);
 
 pub type Matrix4 = [f32; 16];
 pub type Vertex3 = [f32; 3];
