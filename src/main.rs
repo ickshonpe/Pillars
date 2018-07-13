@@ -16,6 +16,7 @@ mod gl_util;
 mod gl_rendering;
 mod graphics;
 mod gravity;
+mod high_score_file;
 mod input;
 mod point2;
 mod random;
@@ -29,6 +30,9 @@ use graphics::{Vertex2, Color, TCVertex2};
 
 
 fn main() {
+
+    let loaded_high_score = high_score_file::read_high_score();
+
     let window_size = [368, 512];
     let cell_size = [32., 32.];
     let cell_padding = [0., 0.];
@@ -69,19 +73,20 @@ fn main() {
 
     let mut event_pump = sdl_context.event_pump().unwrap();   
     let mut game_data = game::GameData::default();
+    game_data.high_score = loaded_high_score;
     let mut input_state = input::InputState::default();
     let mut ticks = 0;
 
     unsafe {
         gl::Viewport(0, 0, 600, 600);
-        gl::ClearColor(0.1, 0.1, 0.15, 1.0);
+        gl::ClearColor(0.12, 0.12, 0.16, 1.0);
         gl::Enable(gl::BLEND);
         gl::BlendEquationSeparate(gl::FUNC_ADD, gl::FUNC_ADD);
         gl::BlendFuncSeparate(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA, gl::ONE, gl::ZERO);
     }
     
-    let orthogonal_projection_matrix = graphics::calculate_orthogonal_projection_matrix([600., 600.], [0., 0.]);
-
+    let mut orthogonal_projection_matrix = graphics::calculate_orthogonal_projection_matrix([600., 600.], [0., 0.]);
+    //orthogonal_projection_matrix = graphics::multiply_matrix(orthogonal_projection_matrix, graphics::rotation_matrix(0.5));
     
 
     let shaders = [
@@ -277,6 +282,6 @@ fn main() {
         std::thread::sleep(std::time::Duration::from_millis(1000 / 60));
     }
 
-
+    high_score_file::write_high_score(game_data.high_score);
 }
 
