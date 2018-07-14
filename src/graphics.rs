@@ -38,33 +38,48 @@ pub fn calculate_orthogonal_projection_matrix(size: [f32; 2], position: [f32; 2]
     ]
 }
 
-pub const IDENTITY_MATRIX4: [f32; 16] = [
-    1.,0.,0.,0.,
-    0.,1.,0.,0.,
-    0.,0.,1.,0.,
-    0.,0.,0.,1.
+pub const IDENTITY_MATRIX2: [f32; 4] = [
+    1., 0.,
+    0., 1.
 ];
 
+pub const IDENTITY_MATRIX4: [f32; 16] = [
+    1.,0.,0.,0.,    // first column
+    0.,1.,0.,0.,    // second "
+    0.,0.,1.,0.,    // third "
+    0.,0.,0.,1.     // fourth "
+];
 
+// rotates about origin
 pub fn rotation_matrix(rads: f32) -> [f32; 16] {
     let c = rads.cos();
     let s = rads.sin();
     [
-        c, -s,0.,0.,
-        s,c,0.,0.,
-        0.,0.,1.,0.,
-        0.,0.,0.,1.
+        c, s, 0., 0.,
+        -s, c, 0., 0.,
+        0., 0., 1., 0.,
+        0., 0., 0., 1.
     ]
 }
 
-pub fn multiply_matrix(a: Matrix4, b: Matrix4) -> Matrix4 {
-    let mut ret = [0.;16];
-    for j in 0..4 {
-    let  j4 = j * 4;
-    ret[j4 + 0] = a[j4]*b[0] + a[j4 + 1]*b[0 + 4] + a[j4 + 2]*b[0 + 8] + a[j4 + 3]*b[0 + 12];
-    ret[j4 + 1] = a[j4]*b[1] + a[j4 + 1]*b[1 + 4] + a[j4 + 2]*b[1 + 8] + a[j4 + 3]*b[1 + 12];
-    ret[j4 + 2] = a[j4]*b[2] + a[j4 + 1]*b[2 + 4] + a[j4 + 2]*b[2 + 8] + a[j4 + 3]*b[2 + 12];
-    ret[j4 + 3] = a[j4]*b[3] + a[j4 + 1]*b[3 + 4] + a[j4 + 2]*b[3 + 8] + a[j4 + 3]*b[3 + 12];
+pub fn translation_matrix(translation: Vertex2) -> Matrix4 {
+    let tx = translation[0];
+    let ty = translation[1];
+    [
+        1., 0., 0., 0.,    // first column
+        0., 1., 0., 0.,    // second "
+        0., 0., 1., 0.,    // third "
+        tx, ty, 0., 1.     // fourth "
+    ]
+}
+pub fn multiply_matrices(a: Matrix4, b: Matrix4) -> Matrix4 {
+    let mut out = [0.;16];
+    for column in 0..4 {
+        let row = column * 4;
+        out[row + 0] = a[row]*b[0] + a[row + 1]*b[4] + a[row + 2]*b[8] + a[row + 3]*b[12];
+        out[row + 1] = a[row]*b[1] + a[row + 1]*b[5] + a[row + 2]*b[9] + a[row + 3]*b[13];
+        out[row + 2] = a[row]*b[2] + a[row + 1]*b[6] + a[row + 2]*b[10] + a[row + 3]*b[14];
+        out[row + 3] = a[row]*b[3] + a[row + 1]*b[7] + a[row + 2]*b[11] + a[row + 3]*b[15];
     }
-    ret
+    out
 }

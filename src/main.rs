@@ -27,7 +27,7 @@ use point2::*;
 use board::*;
 use gl::types::*;
 use graphics::{Vertex2, Color, TCVertex2};
-
+use sdl2::controller::Button;
 
 fn main() {
 
@@ -43,6 +43,14 @@ fn main() {
         sdl2::keyboard::Keycode::Z => input::Buttons::CycleUp,
         sdl2::keyboard::Keycode::X => input::Buttons::CycleDown,
         sdl2::keyboard::Keycode::Escape => input::Buttons::Quit
+    };
+
+    let controller_bindings: std::collections::HashMap<sdl2::controller::Button, input::Buttons> = hashmap!{
+        sdl2::controller::Button::B => input::Buttons::CycleUp,
+        sdl2::controller::Button::A => input::Buttons::CycleDown,
+        sdl2::controller::Button::DPadLeft => input::Buttons::Left,
+        sdl2::controller::Button::DPadRight => input::Buttons::Right,
+        sdl2::controller::Button::DPadDown => input::Buttons::Down
     };
 
     let sdl_context = sdl2::init().unwrap();
@@ -71,11 +79,31 @@ fn main() {
     let block_bytes = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/block.png"));
     let block_texture = textures::load_png_into_texture(std::io::Cursor::new(&block_bytes[..]));
 
-    let mut event_pump = sdl_context.event_pump().unwrap();   
+    let controller_subsystem = sdl_context.game_controller().unwrap();
+    let controllers = {
+        let mut cs = Vec::new();
+        if let Ok(n) = controller_subsystem.num_joysticks() {
+            for id in 0..n {
+                if controller_subsystem.is_game_controller(id) {
+                    if let Ok(controller) = controller_subsystem.open(id) {
+                        cs.push(controller);
+                    }
+                }
+            }
+        }
+        cs
+    };
+
+    let mut event_pump = sdl_context.event_pump().unwrap();
+
+    event_pump.enable_event(sdl2::event::EventType::ControllerButtonDown);
+    event_pump.enable_event(sdl2::event::EventType::ControllerButtonUp);
+
     let mut game_data = game::GameData::default();
     game_data.high_score = loaded_high_score;
     let mut input_state = input::InputState::default();
     let mut ticks = 0;
+
 
     unsafe {
         gl::Viewport(0, 0, 600, 600);
@@ -191,7 +219,7 @@ fn main() {
 
         input_state.store_current();
         for event in event_pump.poll_iter() {
-            events::process_sdl_event(&event, &mut input_state, &key_bindings);
+            events::process_sdl_event(&event, &mut input_state, &key_bindings, &controller_bindings);
         }
         if input_state.down(input::Buttons::Quit) {
             break 'game_loop;
@@ -221,8 +249,8 @@ fn main() {
 
         let char_size = [16., 16.];
         let display_strings = [
-            (format!("HIGH!: {}", game_data.high_score).into_bytes(), [left + char_size[0] * 7., top - char_size[1] * 1.5]),
-            (format!("SCORE: {}", game_data.score).into_bytes(), [left + char_size[0] * 7., bottom + char_size[1] * 0.5])
+            (format!("{:06}", game_data.high_score).into_bytes(), [left + char_size[0] * 13., top - char_size[1] * 1.5]),
+            (format!("{:06}", game_data.score).into_bytes(), [left + char_size[0] * 3., top - char_size[1] * 1.5])
         ];
 
         let mut charset_vertices = Vec::new();
