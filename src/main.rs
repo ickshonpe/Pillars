@@ -82,7 +82,7 @@ fn main() {
     let block_texture = textures::load_png_into_texture(std::io::Cursor::new(&block_bytes[..]));
 
     let controller_subsystem = sdl_context.game_controller().unwrap();
-    let controllers = {
+    let mut controllers = {
         let mut cs = Vec::new();
         if let Ok(n) = controller_subsystem.num_joysticks() {
             for id in 0..n {
@@ -221,7 +221,7 @@ fn main() {
 
         input_state.store_current();
         for event in event_pump.poll_iter() {
-            events::process_sdl_event(&event, &mut input_state, &key_bindings, &controller_bindings);
+            events::process_sdl_event(&event, &mut input_state, &key_bindings, &controller_bindings, &mut controllers, &controller_subsystem);
         }
         if input_state.down(input::Buttons::Quit) {
             break 'game_loop;

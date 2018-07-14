@@ -11,6 +11,8 @@ pub fn process_sdl_event(
     input_state: &mut InputState,
     key_bindings: &std::collections::HashMap<Keycode, Buttons>,
     controller_bindings: &std::collections::HashMap<controller::Button, Buttons>,
+    controllers: &mut Vec<sdl2::controller::GameController>,
+    controller_subsystem: &sdl2::GameControllerSubsystem
 ) {
     match event {
         Event::Quit { .. } => {
@@ -30,6 +32,22 @@ pub fn process_sdl_event(
                 }
             }
         },
+        Event::ControllerDeviceAdded { which, .. } => {
+            if let Ok(c) = controller_subsystem.open(*which) {
+                if !controllers.iter().any(|d| c.instance_id() == d.instance_id() ) {
+                    controllers.push(c);
+                }
+                println!("Device {} added", which);
+                println!("\ttotal devices {}", controllers.len());
+            }
+
+        },
+        Event::ControllerDeviceRemoved { which, .. } => {
+            controllers.retain(|c| c.instance_id() != *which);
+            println!("Device {} removed", which);
+            println!("\ttotal devices {}", controllers.len());
+        },
+
         Event::ControllerButtonDown {
             timestamp,
             which,
