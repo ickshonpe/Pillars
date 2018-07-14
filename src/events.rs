@@ -48,6 +48,30 @@ pub fn process_sdl_event(
                 input_state.release(button);
             }
         },
+        Event::ControllerAxisMotion { axis, value, .. } => {
+            if *axis == sdl2::controller::Axis::LeftX {
+                let dead_zone = 13_000;
+                if *value < -dead_zone {
+                    input_state.press(Buttons::Left);
+                    input_state.release( Buttons::Right);
+                } else if *value < dead_zone {
+                    input_state.release( Buttons::Left);
+                    input_state.release( Buttons::Right);
+                } else {
+                    input_state.press(Buttons::Right);
+                    input_state.release( Buttons::Left);
+                }
+            }
+            if *axis == sdl2::controller::Axis::LeftY {
+                let dead_zone = 13_000;
+                if dead_zone < *value {
+                    input_state.press(Buttons::Down);
+
+                } else {
+                    input_state.release( Buttons::Down);
+                }
+            }
+        },
         _ => {}
     }
 

@@ -42,6 +42,7 @@ fn main() {
         sdl2::keyboard::Keycode::Down => input::Buttons::Down,
         sdl2::keyboard::Keycode::Z => input::Buttons::CycleUp,
         sdl2::keyboard::Keycode::X => input::Buttons::CycleDown,
+        sdl2::keyboard::Keycode::Space => input::Buttons::Start,
         sdl2::keyboard::Keycode::Escape => input::Buttons::Quit
     };
 
@@ -50,7 +51,8 @@ fn main() {
         sdl2::controller::Button::A => input::Buttons::CycleDown,
         sdl2::controller::Button::DPadLeft => input::Buttons::Left,
         sdl2::controller::Button::DPadRight => input::Buttons::Right,
-        sdl2::controller::Button::DPadDown => input::Buttons::Down
+        sdl2::controller::Button::DPadDown => input::Buttons::Down,
+        sdl2::controller::Button::Start => input::Buttons::Start
     };
 
     let sdl_context = sdl2::init().unwrap();

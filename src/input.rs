@@ -7,6 +7,7 @@ pub enum Buttons {
     Down,
     CycleUp,
     CycleDown,
+    Start,
     Quit
 }
 
