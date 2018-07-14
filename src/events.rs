@@ -37,15 +37,10 @@ pub fn process_sdl_event(
                 if !controllers.iter().any(|d| c.instance_id() == d.instance_id() ) {
                     controllers.push(c);
                 }
-                println!("Device {} added", which);
-                println!("\ttotal devices {}", controllers.len());
             }
-
         },
         Event::ControllerDeviceRemoved { which, .. } => {
             controllers.retain(|c| c.instance_id() != *which);
-            println!("Device {} removed", which);
-            println!("\ttotal devices {}", controllers.len());
         },
 
         Event::ControllerButtonDown {

@@ -51,12 +51,14 @@ pub fn draw_column(
     column: ::columns::Column,
     target: Vertex2,
     tile_size: Vertex2,
-    tile_padding: Vertex2) {
+    tile_padding: Vertex2,
+    alpha: f32) {
     let mut p = column.position;
     for i in 0..3 {
         let x = target[0] + p.x as f32 * tile_size[0];
         let y =  target[1] + p.y as f32 * tile_size[1];
-        let color = column.jewels[i].color_gl();
+        let mut color = column.jewels[i].color_gl();
+        color[3] = alpha;
         let position = [x, y];
         push_quad_vertices(vertex_buffer, position, tile_size, color);
         p.up();

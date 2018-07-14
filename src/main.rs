@@ -33,7 +33,7 @@ fn main() {
 
     let loaded_high_score = high_score_file::read_high_score();
 
-    let window_size = [368, 512];
+    let window_size = [352, 520];
     let cell_size = [32., 32.];
     let cell_padding = [0., 0.];
     let key_bindings: std::collections::HashMap<sdl2::keyboard::Keycode, input::Buttons> = hashmap!{
@@ -229,6 +229,14 @@ fn main() {
 
        game::update_game(&mut game_data, &input_state, 1.0 / 60.0 );
         board_vertices.clear();
+        let next_column = game_data.next_column;
+        gl_rendering::draw_column(
+            &mut board_vertices,
+            next_column,
+            target,
+            cell_size,
+            cell_padding,
+            0.5);
         gl_rendering::draw_board(
             &mut board_vertices,
             &game_data.board,
@@ -236,13 +244,7 @@ fn main() {
             target,
             cell_size,
             cell_padding);
-        let next_column = game_data.next_column;
-        gl_rendering::draw_column(
-            &mut board_vertices,
-            columns::Column { position: P2 { x: next_column.position.x + 5, y: next_column.position.y - 3}, ..next_column },
-            [target[0] + cell_size[0] * 0.25, target[1] + cell_size[1] * 0.25],
-            cell_size,
-            cell_padding);
+
 
         let top = (window_size[1] - 1) as f32;
         let left = 0.;
