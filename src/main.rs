@@ -190,29 +190,33 @@ fn main() {
 
     let border_cell_size = [cell_size[0] + cell_padding[0], cell_size[1] + cell_padding[1]];
     let mut border_vertices = Vec::new();
+    let border_color = [0.75, 0.75, 0.75, 1.0];
     for i in 0..game_data.board.width() + 2  {
         gl_rendering::push_quad_vertices(
             &mut border_vertices,
             [target[0] - border_cell_size[0] + border_cell_size[0] * (i as f32), target[1] - border_cell_size[1]],
             border_cell_size,
-            graphics::WHITE);
+            border_color);
     }
     for i in 0..game_data.board.height()  {
         gl_rendering::push_quad_vertices(
             &mut border_vertices,
             [target[0] - border_cell_size[0], target[1] + i as f32 * border_cell_size[1]],
             border_cell_size,
-            graphics::WHITE);
+            border_color);
         gl_rendering::push_quad_vertices(
             &mut border_vertices,
             [target[0] + ((cell_size[0] + cell_padding[0]) * game_data.board.width() as f32), target[1] + i as f32 * border_cell_size[1]],
             border_cell_size,
-            graphics::WHITE);
+            border_color);
     }
 
+    let mut last_ms = unsafe { sdl2::sys::SDL_GetTicks() } as u64;
+    let mut last_ticks = 0;
+    let mut second_timer = 1.0f64;
 
     'game_loop: loop {
-       ticks += 1;
+
        if game_data.game_over {
            let high_score = if game_data.score > game_data.high_score { game_data.score } else { game_data.high_score };
            game_data = game::GameData::default();
@@ -226,8 +230,29 @@ fn main() {
         if input_state.down(input::Buttons::Quit) {
             break 'game_loop;
         }
+        if input_state.just_pressed(input::Buttons::Start) {
+            if let game::GameState::Paused(game_state_box) = game_data.game_state {
+                game_data.game_state = *game_state_box;
+            } else {
+                game_data.game_state = game::GameState::Paused(Box::new(game_data.game_state));
+            }
+        }
 
-       game::update_game(&mut game_data, &input_state, 1.0 / 60.0 );
+        let current_ms = unsafe { sdl2::sys::SDL_GetTicks() } as u64;
+        let mut frame_time_ms = current_ms - last_ms;
+        last_ms = current_ms;
+        if frame_time_ms == 0 {
+            std::thread::sleep(std::time::Duration::from_millis(1));
+            frame_time_ms = 1;
+        };
+        let time_delta = 0.001 * (frame_time_ms as f64);
+        second_timer -= time_delta;
+        if second_timer < 0. {
+//            println!("{}, {}. {}", frame_time_ms, time_delta, ticks - last_ticks);
+            last_ticks = ticks;
+            second_timer = 1.;
+        }
+       game::update_game(&mut game_data, &input_state, time_delta );
         board_vertices.clear();
         let next_column = game_data.next_column;
         gl_rendering::draw_column(
@@ -264,23 +289,26 @@ fn main() {
 
         unsafe {
             gl::Clear(gl::COLOR_BUFFER_BIT);
-            gl_util::use_program(&shader_program);
 
-            // draw all pillars
-            gl::BindTexture(gl::TEXTURE_2D, pillar_texture.id());
-            gl::BindBuffer(gl::ARRAY_BUFFER, vertex_buffer);
-            gl::BufferData(
-                gl::ARRAY_BUFFER,
-                (board_vertices.len() * std::mem::size_of::<TCVertex2>()) as GLsizeiptr,
-                board_vertices.as_ptr() as *const GLvoid,
-                gl::STATIC_DRAW
-            );
-            gl::BindVertexArray(vertex_attributes_array);
-            gl::DrawArrays(gl::TRIANGLES, 0, board_vertices.len() as GLint);
-            gl::BindVertexArray(0);
-            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
-            gl::UseProgram(0);
-
+            if let game::GameState::Paused(_) = game_data.game_state {
+                charset.push_text_vertices(
+                    &mut charset_vertices,&"paused".to_string().into_bytes(), [right * 0.5 - 3. * char_size[0], top * 0.5], char_size, graphics::WHITE);
+            } else {            // draw all pillars
+                gl_util::use_program(&shader_program);
+                gl::BindTexture(gl::TEXTURE_2D, pillar_texture.id());
+                gl::BindBuffer(gl::ARRAY_BUFFER, vertex_buffer);
+                gl::BufferData(
+                    gl::ARRAY_BUFFER,
+                    (board_vertices.len() * std::mem::size_of::<TCVertex2>()) as GLsizeiptr,
+                    board_vertices.as_ptr() as *const GLvoid,
+                    gl::STATIC_DRAW
+                );
+                gl::BindVertexArray(vertex_attributes_array);
+                gl::DrawArrays(gl::TRIANGLES, 0, board_vertices.len() as GLint);
+                gl::BindVertexArray(0);
+                gl::BindBuffer(gl::ARRAY_BUFFER, 0);
+                gl::UseProgram(0);
+            }
             gl_util::use_program(&shader_program);
             gl::BindTexture(gl::TEXTURE_2D, block_texture.id());
             gl::BindBuffer(gl::ARRAY_BUFFER, vertex_buffer);
@@ -311,7 +339,23 @@ fn main() {
             gl::UseProgram(0);
         }
         window.gl_swap_window();
-        std::thread::sleep(std::time::Duration::from_millis(1000 / 60));
+        ticks += 1;
+//        let t = unsafe { sdl2::sys::SDL_GetTicks() } as u64;
+//        if ticks % 60 == 0 {
+//            println!("{}", t - second);
+//            second = t;
+//        }
+//        let fixed_time_step = 1000 / 60;
+//        let difference = t - last;
+//        let sleep_time =
+//            if difference < fixed_time_step {
+//                fixed_time_step - difference
+//            } else {
+//                println!("! : {}", difference);
+//                0
+//            };
+//        last = t;
+
     }
 
     high_score_file::write_high_score(game_data.high_score);
