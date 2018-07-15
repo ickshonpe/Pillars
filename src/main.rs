@@ -250,6 +250,11 @@ fn main() {
         let time_delta = (1. / 1_000_000_000.) * (frame_time_ns as f64);
        game::update_game(&mut game_data, &input_state, time_delta );
         board_vertices.clear();
+        let alpha = if let game::GameState::Holding(time_left, total_time) = game_data.game_state {
+                0.5 + 0.5 * (( total_time - time_left) / total_time) as f32
+            } else {
+                0.5
+            };
         let next_column = game_data.next_column;
         gl_rendering::draw_column(
             &mut board_vertices,
@@ -257,7 +262,7 @@ fn main() {
             target,
             cell_size,
             cell_padding,
-            0.5);
+            alpha);
         gl_rendering::draw_board(
             &mut board_vertices,
             &game_data.board,

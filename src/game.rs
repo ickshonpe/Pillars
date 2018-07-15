@@ -11,7 +11,8 @@ pub enum GameState {
     Paused(Box<GameState>),
     Playing,
     Dropped,
-    Matching(f64)
+    Matching(f64),
+    Holding(f64, f64)
 }
 
 pub struct GameData {
@@ -142,16 +143,13 @@ pub fn update_game(game_data: &mut GameData, input: &InputState, time_delta: f64
             if !gravity::drop_jewels(game_board) {
                 game_data.matches = scan_for_matches(&game_board, game_data.min_gem_line_length);
                 if game_data.matches.is_empty() {
-                        game_data.game_state = GameState::Playing;
+                        game_data.game_state = GameState::Holding(0.25, 0.25);
                         game_data.score += game_data.score_accumulator;
                         if 0 < game_data.score_accumulator {
                             game_data.last_accumulated_score = game_data.score_accumulator;
                         }
                         game_data.score_accumulator = 0;
-                        game_data.current_column = game_data.next_column;
-                        game_data.next_column = Column::new(game_data.column_spawn_point);
-                        game_data.drop_cool_down = -game_data.drop_speed * 0.5;
-                        game_data.game_over = check_for_collision(&game_board, &game_data.current_column);
+
                 } else {
                     game_data.game_state = GameState::Matching(game_data.matching_time);
                 }
@@ -168,6 +166,17 @@ pub fn update_game(game_data: &mut GameData, input: &InputState, time_delta: f64
                 game_data.game_state = GameState::Matching(time_left - time_delta);
             }
         },
+        GameState::Holding(time_left, total_time) => {
+            if time_left < 0.0 {
+                game_data.current_column = game_data.next_column;
+                game_data.next_column = Column::new(game_data.column_spawn_point);
+                game_data.drop_cool_down = -game_data.drop_speed * 0.5;
+                game_data.game_over = check_for_collision(&game_board, &game_data.current_column);
+                game_data.game_state = GameState::Playing;
+            } else {
+                game_data.game_state = GameState::Holding(time_left - time_delta, total_time);
+            }
+        }
         _ => {}
 
     }
