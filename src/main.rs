@@ -336,24 +336,7 @@ fn main() {
         }
         window.gl_swap_window();
         ticks += 1;
-//        let t = unsafe { sdl2::sys::SDL_GetTicks() } as u64;
-//        if ticks % 60 == 0 {
-//            println!("{}", t - second);
-//            second = t;
-//        }
-//        let fixed_time_step = 1000 / 60;
-//        let difference = t - last;
-//        let sleep_time =
-//            if difference < fixed_time_step {
-//                fixed_time_step - difference
-//            } else {
-//                println!("! : {}", difference);
-//                0
-//            };
-//        last = t;
-
     }
-
     high_score_file::write_high_score(game_data.high_score);
 }
 
