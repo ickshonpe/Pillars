@@ -30,6 +30,9 @@ use gl::types::*;
 use graphics::{Vertex2, Color, TCVertex2};
 use sdl2::controller::Button;
 
+
+
+
 fn main() {
 
     let loaded_high_score = high_score_file::read_high_score();
@@ -216,19 +219,68 @@ fn main() {
     let mut last_ns = time::precise_time_ns() - 5;
     let mut last_ticks = 0;
     let mut second_timer = 1.0f64;
+    let mut in_titleScreen = true;
+
+    let char_size = [16., 16.];
+    let top = (window_size[1] - 1) as f32;
+    let left = 0.;
+    let right = (window_size[0] - 1) as f32;
+    let bottom = 0.;
 
     'game_loop: loop {
-
-       if game_data.game_over {
-           let high_score = if game_data.score > game_data.high_score { game_data.score } else { game_data.high_score };
-           game_data = game::GameData::default();
-           game_data.high_score = high_score;
-       }
-
         input_state.store_current();
         for event in event_pump.poll_iter() {
             events::process_sdl_event(&event, &mut input_state, &key_bindings, &controller_bindings, &mut controllers, &controller_subsystem);
         }
+
+        if game_data.game_over {
+            let high_score = if game_data.score > game_data.high_score { game_data.score } else { game_data.high_score };
+            //game_data = game::GameData::default();
+            game_data.high_score = high_score;
+            in_titleScreen = true;
+        }
+
+        if in_titleScreen {
+            let message = b"Columns";
+            let display_strings = [
+                (format!("{:06}", game_data.high_score).into_bytes(), [left + char_size[0] * 13., top - char_size[1] * 1.5]),
+                (format!("{:06}", game_data.score).into_bytes(), [left + char_size[0] * 3., top - char_size[1] * 1.5]),
+                ("columns".to_string().into_bytes(), [right * 0.5 - 3.5 * char_size[0], top * 0.5])
+            ];
+            let mut charset_vertices = Vec::new();
+            for message in display_strings.iter() {
+                charset.push_text_vertices(&mut charset_vertices, &message.0, message.1, char_size, graphics::WHITE);
+            }
+            unsafe {
+                gl::Clear(gl::COLOR_BUFFER_BIT);
+
+                gl_util::use_program(&shader_program);
+                gl::BindTexture(gl::TEXTURE_2D, charset_texture.id());
+                gl::BindBuffer(gl::ARRAY_BUFFER, vertex_buffer);
+                gl::BufferData(
+                    gl::ARRAY_BUFFER,
+                    (charset_vertices.len() * std::mem::size_of::<TCVertex2>()) as GLsizeiptr,
+                    charset_vertices.as_ptr() as *const GLvoid,
+                    gl::STATIC_DRAW
+                );
+                gl::BindVertexArray(vertex_attributes_array);
+                gl::DrawArrays(gl::TRIANGLES, 0, charset_vertices.len() as GLint);
+                gl::BindVertexArray(0);
+                gl::BindBuffer(gl::ARRAY_BUFFER, 0);
+                gl::UseProgram(0);
+            }
+            if input_state.just_pressed(input::Buttons::Start) {
+                let high_score = game_data.high_score;
+                game_data = game::GameData::default();
+                game_data.high_score = high_score;
+                in_titleScreen = false;
+            }
+            window.gl_swap_window();
+            ticks += 1;
+            continue 'game_loop;
+        }
+
+
         if input_state.down(input::Buttons::Quit) {
             break 'game_loop;
         }
@@ -272,12 +324,9 @@ fn main() {
             cell_padding);
 
 
-        let top = (window_size[1] - 1) as f32;
-        let left = 0.;
-        let right = (window_size[0] - 1) as f32;
-        let bottom = 0.;
 
-        let char_size = [16., 16.];
+
+
         let display_strings = [
             (format!("{:06}", game_data.high_score).into_bytes(), [left + char_size[0] * 13., top - char_size[1] * 1.5]),
             (format!("{:06}", game_data.score).into_bytes(), [left + char_size[0] * 3., top - char_size[1] * 1.5])
