@@ -3,6 +3,7 @@ extern crate sdl2;
 extern crate image;
 extern crate rand;
 #[macro_use] extern crate maplit;
+extern crate time;
 
 mod board;
 mod board_analysis;
@@ -211,7 +212,8 @@ fn main() {
             border_color);
     }
 
-    let mut last_ms = unsafe { sdl2::sys::SDL_GetTicks() } as u64;
+    //let mut last_ms = unsafe { sdl2::sys::SDL_GetTicks() } as u64;
+    let mut last_ns = time::precise_time_ns() - 5;
     let mut last_ticks = 0;
     let mut second_timer = 1.0f64;
 
@@ -238,20 +240,14 @@ fn main() {
             }
         }
 
-        let current_ms = unsafe { sdl2::sys::SDL_GetTicks() } as u64;
-        let mut frame_time_ms = current_ms - last_ms;
-        last_ms = current_ms;
-        if frame_time_ms == 0 {
-            std::thread::sleep(std::time::Duration::from_millis(1));
-            frame_time_ms = 1;
+        let current_ns = time::precise_time_ns();
+        let mut frame_time_ns = current_ns - last_ns;
+        last_ns = current_ns;
+        if frame_time_ns == 0 {
+            // need a really fast computer for this to matter?
+            frame_time_ns = 1;
         };
-        let time_delta = 0.001 * (frame_time_ms as f64);
-        second_timer -= time_delta;
-        if second_timer < 0. {
-//            println!("{}, {}. {}", frame_time_ms, time_delta, ticks - last_ticks);
-            last_ticks = ticks;
-            second_timer = 1.;
-        }
+        let time_delta = (1. / 1_000_000_000.) * (frame_time_ns as f64);
        game::update_game(&mut game_data, &input_state, time_delta );
         board_vertices.clear();
         let next_column = game_data.next_column;
