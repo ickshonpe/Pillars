@@ -34,8 +34,8 @@ use sdl2::controller::Button;
 
 
 fn main() {
-
-    let loaded_high_score = high_score_file::read_high_score();
+    let mut last_score = 0;
+    let mut high_score = high_score_file::read_high_score();
 
     let window_size = [352, 520];
     let cell_size = [32., 32.];
@@ -106,7 +106,6 @@ fn main() {
     event_pump.enable_event(sdl2::event::EventType::ControllerButtonUp);
 
     let mut game_data = game::GameData::default();
-    game_data.high_score = loaded_high_score;
     let mut input_state = input::InputState::default();
     let mut ticks = 0;
 
@@ -238,15 +237,17 @@ fn main() {
         }
 
         if game_data.game_over {
-            let high_score = if game_data.score > game_data.high_score { game_data.score } else { game_data.high_score };
-            game_data.high_score = high_score;
+            last_score = game_data.score;
+            if high_score < last_score {
+                high_score = last_score;
+            }
             in_titleScreen = true;
         }
 
         if in_titleScreen {
             let display_strings = [
-                (format!("{:06}", game_data.high_score).into_bytes(), [left + char_size[0] * 13., top - char_size[1] * 1.5]),
-                (format!("{:06}", game_data.score).into_bytes(), [left + char_size[0] * 3., top - char_size[1] * 1.5]),
+                (format!("{:06}", high_score).into_bytes(), [left + char_size[0] * 13., top - char_size[1] * 1.5]),
+                (format!("{:06}", last_score).into_bytes(), [left + char_size[0] * 3., top - char_size[1] * 1.5]),
                 ("pillars".to_string().into_bytes(), [right * 0.5 - 3.5 * char_size[0], top * 0.5])
             ];
             let mut charset_vertices = Vec::new();
@@ -264,9 +265,7 @@ fn main() {
                 vertex_attributes_array
             );
             if input_state.just_pressed(input::Buttons::Start) {
-                let high_score = game_data.high_score;
                 game_data = game::GameData::default();
-                game_data.high_score = high_score;
                 in_titleScreen = false;
             }
             window.gl_swap_window();
@@ -315,12 +314,8 @@ fn main() {
             cell_size,
             cell_padding);
 
-
-
-
-
         let display_strings = [
-            (format!("{:06}", game_data.high_score).into_bytes(), [left + char_size[0] * 13., top - char_size[1] * 1.5]),
+            (format!("{:06}", high_score).into_bytes(), [left + char_size[0] * 13., top - char_size[1] * 1.5]),
             (format!("{:06}", game_data.score).into_bytes(), [left + char_size[0] * 3., top - char_size[1] * 1.5])
         ];
 
@@ -335,55 +330,37 @@ fn main() {
             if let game::GameState::Paused(_) = game_data.game_state {
                 charset.push_text_vertices(
                     &mut charset_vertices,&"paused".to_string().into_bytes(), [right * 0.5 - 3. * char_size[0], top * 0.5], char_size, graphics::WHITE);
-            } else {            // draw all pillars
-                gl_util::use_program(&shader_program);
-                gl::BindTexture(gl::TEXTURE_2D, pillar_texture.id());
-                gl::BindBuffer(gl::ARRAY_BUFFER, vertex_buffer);
-                gl::BufferData(
-                    gl::ARRAY_BUFFER,
-                    (board_vertices.len() * std::mem::size_of::<TCVertex2>()) as GLsizeiptr,
-                    board_vertices.as_ptr() as *const GLvoid,
-                    gl::STATIC_DRAW
+            } else {
+                // draw all pillars
+                gl_util::draw_textured_colored_quads(
+                    &board_vertices,
+                    &shader_program,
+                    pillar_texture.id(),
+                    vertex_buffer,
+                    vertex_attributes_array
                 );
-                gl::BindVertexArray(vertex_attributes_array);
-                gl::DrawArrays(gl::TRIANGLES, 0, board_vertices.len() as GLint);
-                gl::BindVertexArray(0);
-                gl::BindBuffer(gl::ARRAY_BUFFER, 0);
-                gl::UseProgram(0);
             }
-            gl_util::use_program(&shader_program);
-            gl::BindTexture(gl::TEXTURE_2D, block_texture.id());
-            gl::BindBuffer(gl::ARRAY_BUFFER, vertex_buffer);
-            gl::BufferData(
-                gl::ARRAY_BUFFER,
-                (border_vertices.len() * std::mem::size_of::<TCVertex2>()) as GLsizeiptr,
-                border_vertices.as_ptr() as *const GLvoid,
-                gl::STATIC_DRAW
-            );
-            gl::BindVertexArray(vertex_attributes_array);
-            gl::DrawArrays(gl::TRIANGLES, 0, border_vertices.len() as GLint);
-            gl::BindVertexArray(0);
-            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
 
-            gl_util::use_program(&shader_program);
-            gl::BindTexture(gl::TEXTURE_2D, charset_texture.id());
-            gl::BindBuffer(gl::ARRAY_BUFFER, vertex_buffer);
-            gl::BufferData(
-                gl::ARRAY_BUFFER,
-                (charset_vertices.len() * std::mem::size_of::<TCVertex2>()) as GLsizeiptr,
-                charset_vertices.as_ptr() as *const GLvoid,
-                gl::STATIC_DRAW
+            gl_util::draw_textured_colored_quads(
+                &border_vertices,
+                &shader_program,
+                block_texture.id(),
+                vertex_buffer,
+                vertex_attributes_array
             );
-            gl::BindVertexArray(vertex_attributes_array);
-            gl::DrawArrays(gl::TRIANGLES, 0, charset_vertices.len() as GLint);
-            gl::BindVertexArray(0);
-            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
-            gl::UseProgram(0);
+
+            gl_util::draw_textured_colored_quads(
+                &charset_vertices,
+                &shader_program,
+                charset_texture.id(),
+                vertex_buffer,
+                vertex_attributes_array
+            );
         }
         window.gl_swap_window();
         ticks += 1;
     }
-    high_score_file::write_high_score(game_data.high_score);
+    high_score_file::write_high_score(high_score);
 }
 
 
