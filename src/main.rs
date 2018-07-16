@@ -31,6 +31,12 @@ use graphics::{Vertex2, Color, TCVertex2};
 use sdl2::controller::Button;
 
 
+enum ProgramState {
+    TitleScreen,
+    Playing,
+    Paused,
+    GameOver(f64)
+}
 
 
 fn main() {
@@ -216,9 +222,9 @@ fn main() {
 
     //let mut last_ms = unsafe { sdl2::sys::SDL_GetTicks() } as u64;
     let mut last_ns = time::precise_time_ns() - 5;
-    let mut last_ticks = 0;
     let mut second_timer = 1.0f64;
     let mut in_titleScreen = true;
+    let mut paused = false;
 
     let char_size = [16., 16.];
     let top = (window_size[1] - 1) as f32;
@@ -226,7 +232,18 @@ fn main() {
     let right = (window_size[0] - 1) as f32;
     let bottom = 0.;
 
+    let mut death_pause = (false, 0.);
+    let mut program_state = ProgramState::TitleScreen;
+
     'game_loop: loop {
+        let current_ns = time::precise_time_ns();
+        let mut frame_time_ns = current_ns - last_ns;
+        last_ns = current_ns;
+        if frame_time_ns == 0 {
+            // need a really fast computer for this to matter?
+            frame_time_ns = 1;
+        };
+        let time_delta = (1. / 1_000_000_000.) * (frame_time_ns as f64);
         input_state.store_current();
         for event in event_pump.poll_iter() {
             events::process_sdl_event(&event, &mut input_state, &key_bindings, &controller_bindings, &mut controllers, &controller_subsystem);
@@ -236,129 +253,240 @@ fn main() {
             break 'game_loop;
         }
 
-        if game_data.game_over {
-            last_score = game_data.score;
-            if high_score < last_score {
-                high_score = last_score;
-            }
-            in_titleScreen = true;
-        }
-
-        if in_titleScreen {
-            let display_strings = [
-                (format!("{:06}", high_score).into_bytes(), [left + char_size[0] * 13., top - char_size[1] * 1.5]),
-                (format!("{:06}", last_score).into_bytes(), [left + char_size[0] * 3., top - char_size[1] * 1.5]),
-                ("pillars".to_string().into_bytes(), [right * 0.5 - 3.5 * char_size[0], top * 0.5])
-            ];
-            let mut charset_vertices = Vec::new();
-            for message in display_strings.iter() {
-                charset.push_text_vertices(&mut charset_vertices, &message.0, message.1, char_size, graphics::WHITE);
-            }
-            unsafe {
-                gl::Clear(gl::COLOR_BUFFER_BIT);
-            }
-            gl_util::draw_textured_colored_quads(
-                &charset_vertices,
-                &shader_program,
-                charset_texture.id(),
-                vertex_buffer,
-                vertex_attributes_array
-            );
-            if input_state.just_pressed(input::Buttons::Start) {
-                game_data = game::GameData::default();
-                in_titleScreen = false;
-            }
-            window.gl_swap_window();
-            ticks += 1;
-            continue 'game_loop;
-        }
-
-
-
-        if input_state.just_pressed(input::Buttons::Start) {
-            if let game::GameState::Paused(game_state_box) = game_data.game_state {
-                game_data.game_state = *game_state_box;
-            } else {
-                game_data.game_state = game::GameState::Paused(Box::new(game_data.game_state));
-            }
-        }
-
-        let current_ns = time::precise_time_ns();
-        let mut frame_time_ns = current_ns - last_ns;
-        last_ns = current_ns;
-        if frame_time_ns == 0 {
-            // need a really fast computer for this to matter?
-            frame_time_ns = 1;
-        };
-        let time_delta = (1. / 1_000_000_000.) * (frame_time_ns as f64);
-       game::update_game(&mut game_data, &input_state, time_delta );
-        board_vertices.clear();
-        let alpha = if let game::GameState::Holding(time_left, total_time) = game_data.game_state {
-                0.5 + 0.5 * (( total_time - time_left) / total_time) as f32
-            } else {
-                0.5
-            };
-        let next_column = game_data.next_column;
-        gl_rendering::draw_column(
-            &mut board_vertices,
-            next_column,
-            target,
-            cell_size,
-            cell_padding,
-            alpha);
-        gl_rendering::draw_board(
-            &mut board_vertices,
-            &game_data.board,
-            game_data.current_column,
-            target,
-            cell_size,
-            cell_padding);
-
-        let display_strings = [
-            (format!("{:06}", high_score).into_bytes(), [left + char_size[0] * 13., top - char_size[1] * 1.5]),
-            (format!("{:06}", game_data.score).into_bytes(), [left + char_size[0] * 3., top - char_size[1] * 1.5])
-        ];
-
-        let mut charset_vertices = Vec::new();
-        for message in display_strings.iter() {
-            charset.push_text_vertices(&mut charset_vertices, &message.0, message.1, char_size, graphics::WHITE);
-        }
-
-        unsafe {
-            gl::Clear(gl::COLOR_BUFFER_BIT);
-
-            if let game::GameState::Paused(_) = game_data.game_state {
-                charset.push_text_vertices(
-                    &mut charset_vertices,&"paused".to_string().into_bytes(), [right * 0.5 - 3. * char_size[0], top * 0.5], char_size, graphics::WHITE);
-            } else {
-                // draw all pillars
+        match program_state {
+            ProgramState::TitleScreen => {
+                if input_state.just_pressed(input::Buttons::Start) {
+                    game_data = game::GameData::default();
+                    program_state = ProgramState::Playing;
+                }
+                let display_strings = [
+                    (format!("{:06}", high_score).into_bytes(), [left + char_size[0] * 13., top - char_size[1] * 1.5]),
+                    (format!("{:06}", last_score).into_bytes(), [left + char_size[0] * 3., top - char_size[1] * 1.5]),
+                    ("pillars".to_string().into_bytes(), [right * 0.5 - 3.5 * char_size[0], top * 0.5])
+                ];
+                let mut charset_vertices = Vec::new();
+                for message in display_strings.iter() {
+                    charset.push_text_vertices(&mut charset_vertices, &message.0, message.1, char_size, graphics::WHITE);
+                }
+                unsafe {
+                    gl::Clear(gl::COLOR_BUFFER_BIT);
+                }
                 gl_util::draw_textured_colored_quads(
-                    &board_vertices,
+                    &charset_vertices,
                     &shader_program,
-                    pillar_texture.id(),
+                    charset_texture.id(),
                     vertex_buffer,
                     vertex_attributes_array
                 );
+                window.gl_swap_window();
+            },
+            ProgramState::Playing => {
+                if input_state.just_pressed(input::Buttons::Start) {
+                    program_state = ProgramState::Paused;
+                    continue 'game_loop;
+                }
+
+                if game_data.game_over  {
+                    last_score = game_data.score;
+                    if high_score < last_score {
+                        high_score = last_score;
+                    }
+                    program_state = ProgramState::GameOver(3.0);
+                    continue 'game_loop;
+                }
+
+                game::update_game(&mut game_data, &input_state, time_delta);
+
+                board_vertices.clear();
+                let alpha = if let game::GameState::Holding(time_left, total_time) = game_data.game_state {
+                    0.5 + 0.5 * (( total_time - time_left) / total_time) as f32
+                } else {
+                    0.5
+                };
+                let next_column = game_data.next_column;
+                gl_rendering::draw_column(
+                    &mut board_vertices,
+                    next_column,
+                    target,
+                    cell_size,
+                    cell_padding,
+                    alpha);
+                gl_rendering::draw_board(
+                    &mut board_vertices,
+                    &game_data.board,
+                    game_data.current_column,
+                    target,
+                    cell_size,
+                    cell_padding);
+
+                let display_strings = [
+                    (format!("{:06}", high_score).into_bytes(), [left + char_size[0] * 13., top - char_size[1] * 1.5]),
+                    (format!("{:06}", game_data.score).into_bytes(), [left + char_size[0] * 3., top - char_size[1] * 1.5])
+                ];
+
+                let mut charset_vertices = Vec::new();
+                for message in display_strings.iter() {
+                    charset.push_text_vertices(&mut charset_vertices, &message.0, message.1, char_size, graphics::WHITE);
+                }
+
+                unsafe {
+                    gl::Clear(gl::COLOR_BUFFER_BIT);
+
+                    if paused {
+                        charset.push_text_vertices(
+                            &mut charset_vertices,&"paused".to_string().into_bytes(), [right * 0.5 - 3. * char_size[0], top * 0.5], char_size, graphics::WHITE);
+                    } else {
+                        // draw all pillars
+                        gl_util::draw_textured_colored_quads(
+                            &board_vertices,
+                            &shader_program,
+                            pillar_texture.id(),
+                            vertex_buffer,
+                            vertex_attributes_array
+                        );
+                    }
+
+                    gl_util::draw_textured_colored_quads(
+                        &border_vertices,
+                        &shader_program,
+                        block_texture.id(),
+                        vertex_buffer,
+                        vertex_attributes_array
+                    );
+
+                    gl_util::draw_textured_colored_quads(
+                        &charset_vertices,
+                        &shader_program,
+                        charset_texture.id(),
+                        vertex_buffer,
+                        vertex_attributes_array
+                    );
+                }
+                window.gl_swap_window();
+
+            },
+            ProgramState::GameOver(time_left) => {
+                let time_left = time_left - time_delta;
+                program_state =
+                    if time_left < 0. {
+                        ProgramState::TitleScreen
+                    } else {
+                        ProgramState::GameOver(time_delta)
+                    };
+
+                board_vertices.clear();
+                let alpha = if let game::GameState::Holding(time_left, total_time) = game_data.game_state {
+                    0.5 + 0.5 * (( total_time - time_left) / total_time) as f32
+                } else {
+                    0.5
+                };
+                let next_column = game_data.next_column;
+                gl_rendering::draw_column(
+                    &mut board_vertices,
+                    next_column,
+                    target,
+                    cell_size,
+                    cell_padding,
+                    alpha);
+                gl_rendering::draw_board(
+                    &mut board_vertices,
+                    &game_data.board,
+                    game_data.current_column,
+                    target,
+                    cell_size,
+                    cell_padding);
+
+                let display_strings = [
+                    (format!("{:06}", high_score).into_bytes(), [left + char_size[0] * 13., top - char_size[1] * 1.5]),
+                    (format!("{:06}", game_data.score).into_bytes(), [left + char_size[0] * 3., top - char_size[1] * 1.5])
+                ];
+
+                let mut charset_vertices = Vec::new();
+                for message in display_strings.iter() {
+                    charset.push_text_vertices(&mut charset_vertices, &message.0, message.1, char_size, graphics::WHITE);
+                }
+
+                unsafe {
+                    gl::Clear(gl::COLOR_BUFFER_BIT);
+
+                    if paused {
+                        charset.push_text_vertices(
+                            &mut charset_vertices,&"paused".to_string().into_bytes(), [right * 0.5 - 3. * char_size[0], top * 0.5], char_size, graphics::WHITE);
+                    } else {
+                        // draw all pillars
+                        gl_util::draw_textured_colored_quads(
+                            &board_vertices,
+                            &shader_program,
+                            pillar_texture.id(),
+                            vertex_buffer,
+                            vertex_attributes_array
+                        );
+                    }
+
+                    gl_util::draw_textured_colored_quads(
+                        &border_vertices,
+                        &shader_program,
+                        block_texture.id(),
+                        vertex_buffer,
+                        vertex_attributes_array
+                    );
+
+                    gl_util::draw_textured_colored_quads(
+                        &charset_vertices,
+                        &shader_program,
+                        charset_texture.id(),
+                        vertex_buffer,
+                        vertex_attributes_array
+                    );
+                }
+                window.gl_swap_window();
+
+            },
+            ProgramState::Paused => {
+                if input_state.just_pressed(input::Buttons::Start) {
+                    program_state = ProgramState::Playing;
+                    continue 'game_loop;
+                }
+
+                board_vertices.clear();
+
+                let display_strings = [
+                    (format!("{:06}", high_score).into_bytes(), [left + char_size[0] * 13., top - char_size[1] * 1.5]),
+                    (format!("{:06}", game_data.score).into_bytes(), [left + char_size[0] * 3., top - char_size[1] * 1.5])
+                ];
+
+                let mut charset_vertices = Vec::new();
+                for message in display_strings.iter() {
+                    charset.push_text_vertices(&mut charset_vertices, &message.0, message.1, char_size, graphics::WHITE);
+                }
+
+
+                charset.push_text_vertices(
+                    &mut charset_vertices,&"paused".to_string().into_bytes(),
+                    [right * 0.5 - 3. * char_size[0], top * 0.5],
+                    char_size, graphics::WHITE);
+
+                unsafe {
+                    gl::Clear(gl::COLOR_BUFFER_BIT);
+                }
+                gl_util::draw_textured_colored_quads(
+                    &border_vertices,
+                    &shader_program,
+                    block_texture.id(),
+                    vertex_buffer,
+                    vertex_attributes_array
+                );
+
+                gl_util::draw_textured_colored_quads(
+                    &charset_vertices,
+                    &shader_program,
+                    charset_texture.id(),
+                    vertex_buffer,
+                    vertex_attributes_array
+                );
+                window.gl_swap_window();
             }
-
-            gl_util::draw_textured_colored_quads(
-                &border_vertices,
-                &shader_program,
-                block_texture.id(),
-                vertex_buffer,
-                vertex_attributes_array
-            );
-
-            gl_util::draw_textured_colored_quads(
-                &charset_vertices,
-                &shader_program,
-                charset_texture.id(),
-                vertex_buffer,
-                vertex_attributes_array
-            );
         }
-        window.gl_swap_window();
-        ticks += 1;
     }
     high_score_file::write_high_score(high_score);
 }

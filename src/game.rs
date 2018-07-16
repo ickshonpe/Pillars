@@ -8,7 +8,7 @@ use input::InputState;
 
 #[derive(PartialEq)]
 pub enum GameState {
-    Paused(Box<GameState>),
+    //Paused(Box<GameState>),
     Playing,
     Dropped,
     Matching(f64),
@@ -72,9 +72,6 @@ impl Default for GameData {
 
 use input::Buttons;
 pub fn update_game(game_data: &mut GameData, input: &InputState, time_delta: f64) {
-    if let GameState::Paused(_) = game_data.game_state  {
-        return
-    }
     let game_board = &mut game_data.board;
     game_data.drop_cool_down  += time_delta;
     game_data.move_cool_down -= time_delta;
@@ -175,7 +172,7 @@ pub fn update_game(game_data: &mut GameData, input: &InputState, time_delta: f64
                 game_data.game_state = GameState::Holding(time_left - time_delta, total_time);
             }
         }
-        _ => {}
+//        _ => {}
 
     }
 }
