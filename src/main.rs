@@ -233,19 +233,21 @@ fn main() {
             events::process_sdl_event(&event, &mut input_state, &key_bindings, &controller_bindings, &mut controllers, &controller_subsystem);
         }
 
+        if input_state.down(input::Buttons::Quit) {
+            break 'game_loop;
+        }
+
         if game_data.game_over {
             let high_score = if game_data.score > game_data.high_score { game_data.score } else { game_data.high_score };
-            //game_data = game::GameData::default();
             game_data.high_score = high_score;
             in_titleScreen = true;
         }
 
         if in_titleScreen {
-            let message = b"Columns";
             let display_strings = [
                 (format!("{:06}", game_data.high_score).into_bytes(), [left + char_size[0] * 13., top - char_size[1] * 1.5]),
                 (format!("{:06}", game_data.score).into_bytes(), [left + char_size[0] * 3., top - char_size[1] * 1.5]),
-                ("columns".to_string().into_bytes(), [right * 0.5 - 3.5 * char_size[0], top * 0.5])
+                ("pillars".to_string().into_bytes(), [right * 0.5 - 3.5 * char_size[0], top * 0.5])
             ];
             let mut charset_vertices = Vec::new();
             for message in display_strings.iter() {
@@ -253,22 +255,14 @@ fn main() {
             }
             unsafe {
                 gl::Clear(gl::COLOR_BUFFER_BIT);
-
-                gl_util::use_program(&shader_program);
-                gl::BindTexture(gl::TEXTURE_2D, charset_texture.id());
-                gl::BindBuffer(gl::ARRAY_BUFFER, vertex_buffer);
-                gl::BufferData(
-                    gl::ARRAY_BUFFER,
-                    (charset_vertices.len() * std::mem::size_of::<TCVertex2>()) as GLsizeiptr,
-                    charset_vertices.as_ptr() as *const GLvoid,
-                    gl::STATIC_DRAW
-                );
-                gl::BindVertexArray(vertex_attributes_array);
-                gl::DrawArrays(gl::TRIANGLES, 0, charset_vertices.len() as GLint);
-                gl::BindVertexArray(0);
-                gl::BindBuffer(gl::ARRAY_BUFFER, 0);
-                gl::UseProgram(0);
             }
+            gl_util::draw_textured_colored_quads(
+                &charset_vertices,
+                &shader_program,
+                charset_texture.id(),
+                vertex_buffer,
+                vertex_attributes_array
+            );
             if input_state.just_pressed(input::Buttons::Start) {
                 let high_score = game_data.high_score;
                 game_data = game::GameData::default();
@@ -281,9 +275,7 @@ fn main() {
         }
 
 
-        if input_state.down(input::Buttons::Quit) {
-            break 'game_loop;
-        }
+
         if input_state.just_pressed(input::Buttons::Start) {
             if let game::GameState::Paused(game_state_box) = game_data.game_state {
                 game_data.game_state = *game_state_box;
@@ -393,4 +385,6 @@ fn main() {
     }
     high_score_file::write_high_score(game_data.high_score);
 }
+
+
 

@@ -130,3 +130,24 @@ impl ShaderProgram {
     }
 }
 
+use gl_util;
+use gl::types::*;
+use graphics::TCVertex2;
+pub fn draw_textured_colored_quads(vertices: &[TCVertex2], shader_program: &gl_util::ShaderProgram, texture: GLuint, vertex_buffer:GLuint, vertex_attributes_array:GLuint) {
+    gl_util::use_program(&shader_program);
+    unsafe {
+        gl::BindTexture(gl::TEXTURE_2D, texture);
+        gl::BindBuffer(gl::ARRAY_BUFFER, vertex_buffer);
+        gl::BufferData(
+            gl::ARRAY_BUFFER,
+            (vertices.len() * std::mem::size_of::<TCVertex2>()) as GLsizeiptr,
+            vertices.as_ptr() as *const GLvoid,
+            gl::STATIC_DRAW
+        );
+        gl::BindVertexArray(vertex_attributes_array);
+        gl::DrawArrays(gl::TRIANGLES, 0, vertices.len() as GLint);
+        gl::BindVertexArray(0);
+        gl::BindBuffer(gl::ARRAY_BUFFER, 0);
+        gl::UseProgram(0);
+    }
+}
