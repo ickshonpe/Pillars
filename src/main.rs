@@ -125,8 +125,7 @@ fn main() {
     }
     
     let mut orthogonal_projection_matrix = graphics::calculate_orthogonal_projection_matrix([600., 600.], [0., 0.]);
-    //orthogonal_projection_matrix = graphics::multiply_matrix(orthogonal_projection_matrix, graphics::rotation_matrix(0.5));
-    
+
 
     let shaders = [
         gl_util::Shader::from_str(shaders::VERTEX_SHADER_SRC, gl::VERTEX_SHADER).unwrap(),
@@ -220,19 +219,13 @@ fn main() {
             border_color);
     }
 
-    //let mut last_ms = unsafe { sdl2::sys::SDL_GetTicks() } as u64;
     let mut last_ns = time::precise_time_ns() - 5;
-    let mut second_timer = 1.0f64;
-    let mut in_titleScreen = true;
-    let mut paused = false;
-
     let char_size = [16., 16.];
     let top = (window_size[1] - 1) as f32;
     let left = 0.;
     let right = (window_size[0] - 1) as f32;
     let bottom = 0.;
 
-    let mut death_pause = (false, 0.);
     let mut program_state = ProgramState::TitleScreen;
 
     'game_loop: loop {
@@ -295,7 +288,7 @@ fn main() {
                     continue 'game_loop;
                 }
 
-                game::update_game(&mut game_data, &input_state, time_delta);
+                let _matches = game::update_game(&mut game_data, &input_state, time_delta);
 
                 board_vertices.clear();
                 let alpha = if let game::GameState::Holding(time_left, total_time) = game_data.game_state {
@@ -332,10 +325,6 @@ fn main() {
                 unsafe {
                     gl::Clear(gl::COLOR_BUFFER_BIT);
 
-                    if paused {
-                        charset.push_text_vertices(
-                            &mut charset_vertices,&"paused".to_string().into_bytes(), [right * 0.5 - 3. * char_size[0], top * 0.5], char_size, graphics::WHITE);
-                    } else {
                         // draw all pillars
                         gl_util::draw_textured_colored_quads(
                             &board_vertices,
@@ -344,7 +333,6 @@ fn main() {
                             vertex_buffer,
                             vertex_attributes_array
                         );
-                    }
 
                     gl_util::draw_textured_colored_quads(
                         &border_vertices,
@@ -373,7 +361,6 @@ fn main() {
                     } else {
                         ProgramState::GameOver(time_delta)
                     };
-
                 board_vertices.clear();
                 let alpha = if let game::GameState::Holding(time_left, total_time) = game_data.game_state {
                     0.5 + 0.5 * (( total_time - time_left) / total_time) as f32
@@ -409,10 +396,6 @@ fn main() {
                 unsafe {
                     gl::Clear(gl::COLOR_BUFFER_BIT);
 
-                    if paused {
-                        charset.push_text_vertices(
-                            &mut charset_vertices,&"paused".to_string().into_bytes(), [right * 0.5 - 3. * char_size[0], top * 0.5], char_size, graphics::WHITE);
-                    } else {
                         // draw all pillars
                         gl_util::draw_textured_colored_quads(
                             &board_vertices,
@@ -421,7 +404,7 @@ fn main() {
                             vertex_buffer,
                             vertex_attributes_array
                         );
-                    }
+
 
                     gl_util::draw_textured_colored_quads(
                         &border_vertices,

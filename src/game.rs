@@ -71,7 +71,7 @@ impl Default for GameData {
 }
 
 use input::Buttons;
-pub fn update_game(game_data: &mut GameData, input: &InputState, time_delta: f64) {
+pub fn update_game(game_data: &mut GameData, input: &InputState, time_delta: f64) -> Option<Vec<P2>> {
     let game_board = &mut game_data.board;
     game_data.drop_cool_down  += time_delta;
     game_data.move_cool_down -= time_delta;
@@ -172,7 +172,7 @@ pub fn update_game(game_data: &mut GameData, input: &InputState, time_delta: f64
                 game_data.game_state = GameState::Holding(time_left - time_delta, total_time);
             }
         }
-//        _ => {}
 
     }
+    None
 }

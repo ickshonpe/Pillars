@@ -46,6 +46,62 @@ pub fn draw_board(
     }
 }
 
+use point2::P2;
+use graphics;
+pub fn draw_board_highlight_matches(
+    vertex_buffer: &mut Vec<TCVertex2>,
+    board: &Board,
+    matches: &[P2],
+    target: Vertex2,
+    tile_size: Vertex2,
+    tile_padding: Vertex2) {
+    
+    for x in 0..board.width() {
+        for y in 0..board.height() {
+            if let Some(jewel) = board[x][y] {
+                let dest_x = (x as f32 * (tile_size[0] + tile_padding[0]) + tile_padding[0]) as f32 + target[0];
+                let dest_y = (y as f32 * (tile_size[1] + tile_padding[1]) + tile_padding[1]) as f32 + target[1];
+                let p = P2::new(x, y);
+                if matches.iter().any(|m| *m == p) {
+                    let color = graphics::WHITE;    
+                    push_quad_vertices(vertex_buffer, target, tile_size, color)
+                } else {                
+                    draw_jewel(vertex_buffer, [dest_x, dest_y], tile_size, jewel);
+                }
+            }
+        }
+    }
+}
+
+pub fn draw_board_fade_matches(
+    vertex_buffer: &mut Vec<TCVertex2>,
+    board: &Board,
+    matches: &[P2],
+    alpha: f32,
+    target: Vertex2,
+    tile_size: Vertex2,
+    tile_padding: Vertex2) {
+    
+    for x in 0..board.width() {
+        for y in 0..board.height() {
+            if let Some(jewel) = board[x][y] {
+                let dest_x = (x as f32 * (tile_size[0] + tile_padding[0]) + tile_padding[0]) as f32 + target[0];
+                let dest_y = (y as f32 * (tile_size[1] + tile_padding[1]) + tile_padding[1]) as f32 + target[1];
+                let p = P2::new(x, y);
+                if matches.iter().any(|m| *m == p) {
+                    let mut color = jewel.color_gl();
+                    color[3] = alpha;
+                    push_quad_vertices(vertex_buffer, target, tile_size, color)
+                } else {                
+                    draw_jewel(vertex_buffer, [dest_x, dest_y], tile_size, jewel);
+                }
+            }
+        }
+    }
+}
+
+
+
 pub fn draw_column(
     mut vertex_buffer: &mut Vec<TCVertex2>,
     column: ::columns::Column,
