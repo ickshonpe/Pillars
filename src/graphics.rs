@@ -14,16 +14,21 @@ pub const ORANGE: [f32; 4] = [1.0, 0.4, 0.0, 1.0];
 
 
 #[repr(C, packed)]
+#[derive(Copy, Clone, Debug)]
 pub struct CVertex2(pub Vertex2, pub Color);
 
 #[repr(C, packed)]
+#[derive(Copy, Clone, Debug)]
 pub struct TCVertex2(pub Vertex2, pub Vertex2, pub Color);
 
 #[repr(C, packed)]
+#[derive(Copy, Clone, Debug)]
 pub struct TVertex2(pub Vertex2, pub Vertex2);
 
 pub type Matrix4 = [f32; 16];
+
 pub type Vertex3 = [f32; 3];
+
 pub type Vertex2 = [f32; 2];
 
 pub fn calculate_orthogonal_projection_matrix(size: [f32; 2], position: [f32; 2]) -> [f32; 16] {
@@ -82,4 +87,25 @@ pub fn multiply_matrices(a: Matrix4, b: Matrix4) -> Matrix4 {
         out[row + 3] = a[row]*b[3] + a[row + 1]*b[7] + a[row + 2]*b[11] + a[row + 3]*b[15];
     }
     out
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct Rectangle {
+    pub position: Vertex2,
+    pub size: Vertex2
+}
+
+impl Rectangle {
+    pub fn left(&self) -> f32 {
+        self.position[0]
+    }
+    pub fn right(&self) -> f32 {
+        self.position[0] + self.size[0]
+    }
+    pub fn bottom(&self) -> f32 {
+        self.position[0]
+    }
+    pub fn top(&self) -> f32 {
+        self.position[1] + self.size[1]
+    }
 }

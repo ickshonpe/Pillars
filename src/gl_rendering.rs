@@ -46,12 +46,13 @@ pub fn draw_board(
     }
 }
 
+use std;
 use point2::P2;
 use graphics;
 pub fn draw_board_highlight_matches(
     vertex_buffer: &mut Vec<TCVertex2>,
     board: &Board,
-    matches: &[P2],
+    matches: &std::collections::HashSet<P2>,
     target: Vertex2,
     tile_size: Vertex2,
     tile_padding: Vertex2) {
@@ -62,9 +63,9 @@ pub fn draw_board_highlight_matches(
                 let dest_x = (x as f32 * (tile_size[0] + tile_padding[0]) + tile_padding[0]) as f32 + target[0];
                 let dest_y = (y as f32 * (tile_size[1] + tile_padding[1]) + tile_padding[1]) as f32 + target[1];
                 let p = P2::new(x, y);
-                if matches.iter().any(|m| *m == p) {
+                if matches.contains(&p) {
                     let color = graphics::WHITE;    
-                    push_quad_vertices(vertex_buffer, target, tile_size, color)
+                    push_quad_vertices(vertex_buffer, [dest_x, dest_y], tile_size, color)
                 } else {                
                     draw_jewel(vertex_buffer, [dest_x, dest_y], tile_size, jewel);
                 }
@@ -76,7 +77,7 @@ pub fn draw_board_highlight_matches(
 pub fn draw_board_fade_matches(
     vertex_buffer: &mut Vec<TCVertex2>,
     board: &Board,
-    matches: &[P2],
+    matches: &std::collections::HashSet<P2>,
     alpha: f32,
     target: Vertex2,
     tile_size: Vertex2,
@@ -88,10 +89,10 @@ pub fn draw_board_fade_matches(
                 let dest_x = (x as f32 * (tile_size[0] + tile_padding[0]) + tile_padding[0]) as f32 + target[0];
                 let dest_y = (y as f32 * (tile_size[1] + tile_padding[1]) + tile_padding[1]) as f32 + target[1];
                 let p = P2::new(x, y);
-                if matches.iter().any(|m| *m == p) {
+                if matches.contains(&p) {
                     let mut color = jewel.color_gl();
                     color[3] = alpha;
-                    push_quad_vertices(vertex_buffer, target, tile_size, color)
+                    push_quad_vertices(vertex_buffer, [dest_x, dest_y], tile_size, color)
                 } else {                
                     draw_jewel(vertex_buffer, [dest_x, dest_y], tile_size, jewel);
                 }
@@ -128,3 +129,11 @@ fn draw_jewel(vertex_buffer: &mut Vec<TCVertex2>, target: Vertex2, size: Vertex2
     push_quad_vertices(vertex_buffer, target, size, color)
 }
 
+use gl_util::draw_textured_colored_quads;
+use charset::Charset;
+pub fn get_scores_display_strings(score: u64, high_score: u64, window_rect: graphics::Rectangle, char_size: Vertex2) -> Vec<(Vec<u8>, Vertex2)> {
+    vec![
+        (format!("{:06}", high_score).into_bytes(), [window_rect.left() + char_size[0] * 13., window_rect.top() - char_size[1] * 1.5]),
+        (format!("{:06}", score).into_bytes(), [window_rect.left() + char_size[0] * 3., window_rect.top() - char_size[1] * 1.5])
+    ]
+}

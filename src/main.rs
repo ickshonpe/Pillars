@@ -27,15 +27,19 @@ mod textures;
 use point2::*;
 use board::*;
 use gl::types::*;
-use graphics::{Vertex2, Color, TCVertex2};
+use graphics::{Vertex2, Color, TCVertex2, Rectangle};
 use sdl2::controller::Button;
 
-
-enum ProgramState {
+#[derive(Copy, Clone, PartialEq)]
+pub enum ProgramState {
     TitleScreen,
     Playing,
     Paused,
-    GameOver(f64)
+    GameOver(f64),
+    Landed,
+    Holding {time_left: f64, total_time: f64 },
+    Fading {time_left: f64, total_time: f64 },
+    Matching { time_left: f64 }
 }
 
 
@@ -225,10 +229,13 @@ fn main() {
     let left = 0.;
     let right = (window_size[0] - 1) as f32;
     let bottom = 0.;
+    let window_rect = Rectangle { position: [0., 0.], size: [(window_size[0] - 1) as f32, (window_size[1] - 1) as f32] };
 
     let mut program_state = ProgramState::TitleScreen;
 
     'game_loop: loop {
+        
+        // things to do every frame
         let current_ns = time::precise_time_ns();
         let mut frame_time_ns = current_ns - last_ns;
         last_ns = current_ns;
@@ -252,11 +259,12 @@ fn main() {
                     game_data = game::GameData::default();
                     program_state = ProgramState::Playing;
                 }
-                let display_strings = [
-                    (format!("{:06}", high_score).into_bytes(), [left + char_size[0] * 13., top - char_size[1] * 1.5]),
-                    (format!("{:06}", last_score).into_bytes(), [left + char_size[0] * 3., top - char_size[1] * 1.5]),
-                    ("pillars".to_string().into_bytes(), [right * 0.5 - 3.5 * char_size[0], top * 0.5])
-                ];
+                let display_strings = {
+                    let mut temp = gl_rendering::get_scores_display_strings(game_data.score, high_score, window_rect, char_size);
+                    temp.push(("pillars".to_string().into_bytes(), [right * 0.5 - 3.5 * char_size[0], top * 0.5]));
+                    temp
+                };
+                
                 let mut charset_vertices = Vec::new();
                 for message in display_strings.iter() {
                     charset.push_text_vertices(&mut charset_vertices, &message.0, message.1, char_size, graphics::WHITE);
@@ -288,14 +296,10 @@ fn main() {
                     continue 'game_loop;
                 }
 
-                let _matches = game::update_game(&mut game_data, &input_state, time_delta);
+                let _matches = game::update_game(&mut game_data, &mut program_state, &input_state, time_delta);
 
                 board_vertices.clear();
-                let alpha = if let game::GameState::Holding(time_left, total_time) = game_data.game_state {
-                    0.5 + 0.5 * (( total_time - time_left) / total_time) as f32
-                } else {
-                    0.5
-                };
+
                 let next_column = game_data.next_column;
                 gl_rendering::draw_column(
                     &mut board_vertices,
@@ -303,7 +307,7 @@ fn main() {
                     target,
                     cell_size,
                     cell_padding,
-                    alpha);
+                    0.5);
                 gl_rendering::draw_board(
                     &mut board_vertices,
                     &game_data.board,
@@ -312,10 +316,7 @@ fn main() {
                     cell_size,
                     cell_padding);
 
-                let display_strings = [
-                    (format!("{:06}", high_score).into_bytes(), [left + char_size[0] * 13., top - char_size[1] * 1.5]),
-                    (format!("{:06}", game_data.score).into_bytes(), [left + char_size[0] * 3., top - char_size[1] * 1.5])
-                ];
+                let display_strings = gl_rendering::get_scores_display_strings(game_data.score, high_score, window_rect, char_size);
 
                 let mut charset_vertices = Vec::new();
                 for message in display_strings.iter() {
@@ -325,14 +326,14 @@ fn main() {
                 unsafe {
                     gl::Clear(gl::COLOR_BUFFER_BIT);
 
-                        // draw all pillars
-                        gl_util::draw_textured_colored_quads(
-                            &board_vertices,
-                            &shader_program,
-                            pillar_texture.id(),
-                            vertex_buffer,
-                            vertex_attributes_array
-                        );
+                    // draw all pillars
+                    gl_util::draw_textured_colored_quads(
+                        &board_vertices,
+                        &shader_program,
+                        pillar_texture.id(),
+                        vertex_buffer,
+                        vertex_attributes_array
+                    );
 
                     gl_util::draw_textured_colored_quads(
                         &border_vertices,
@@ -362,11 +363,6 @@ fn main() {
                         ProgramState::GameOver(time_delta)
                     };
                 board_vertices.clear();
-                let alpha = if let game::GameState::Holding(time_left, total_time) = game_data.game_state {
-                    0.5 + 0.5 * (( total_time - time_left) / total_time) as f32
-                } else {
-                    0.5
-                };
                 let next_column = game_data.next_column;
                 gl_rendering::draw_column(
                     &mut board_vertices,
@@ -374,7 +370,7 @@ fn main() {
                     target,
                     cell_size,
                     cell_padding,
-                    alpha);
+                    0.5);
                 gl_rendering::draw_board(
                     &mut board_vertices,
                     &game_data.board,
@@ -383,10 +379,7 @@ fn main() {
                     cell_size,
                     cell_padding);
 
-                let display_strings = [
-                    (format!("{:06}", high_score).into_bytes(), [left + char_size[0] * 13., top - char_size[1] * 1.5]),
-                    (format!("{:06}", game_data.score).into_bytes(), [left + char_size[0] * 3., top - char_size[1] * 1.5])
-                ];
+                let display_strings = gl_rendering::get_scores_display_strings(game_data.score, high_score, window_rect, char_size);
 
                 let mut charset_vertices = Vec::new();
                 for message in display_strings.iter() {
@@ -433,10 +426,9 @@ fn main() {
 
                 board_vertices.clear();
 
-                let display_strings = [
-                    (format!("{:06}", high_score).into_bytes(), [left + char_size[0] * 13., top - char_size[1] * 1.5]),
-                    (format!("{:06}", game_data.score).into_bytes(), [left + char_size[0] * 3., top - char_size[1] * 1.5])
-                ];
+                let display_strings = 
+                  gl_rendering::get_scores_display_strings(game_data.score, high_score, window_rect, char_size);
+                
 
                 let mut charset_vertices = Vec::new();
                 for message in display_strings.iter() {
@@ -468,7 +460,168 @@ fn main() {
                     vertex_attributes_array
                 );
                 window.gl_swap_window();
+                
+            },
+            ProgramState::Holding { time_left, total_time } => {
+                if time_left < 0.0 {
+                    game_data.current_column = game_data.next_column;
+                    game_data.next_column = columns::Column::new(game_data.column_spawn_point);
+                    game_data.drop_cool_down = -game_data.drop_speed * 0.5;
+                    game_data.game_over = board_analysis::check_for_collision(&game_data.board, &game_data.current_column);
+                    //game_data.game_state = game::GameState::Playing;
+                    program_state = ProgramState::Playing
+                } else {
+                    program_state = ProgramState::Holding{ time_left: time_left - time_delta, total_time };
+                }
+            },
+            ProgramState::Landed => {
+                if !gravity::drop_jewels(&mut game_data.board) {
+                    game_data.matches = board_analysis::scan_for_matches(&game_data.board, game_data.min_gem_line_length);
+                    if game_data.matches.is_empty() {
+                        program_state = ProgramState::Holding{time_left: 0.25, total_time: 0.25};
+                        game_data.score += game_data.score_accumulator;
+                        if 0 < game_data.score_accumulator {
+                            game_data.last_accumulated_score = game_data.score_accumulator;
+                        }
+                        game_data.score_accumulator = 0;
+                    } else {
+                        program_state = ProgramState::Matching{ time_left: 0.1 };
+                    }
+                }
+            },
+            ProgramState::Matching {time_left } => {
+                program_state = if time_left < 0.0 {
+                    ProgramState::Fading { time_left: game_data.matching_time, total_time: game_data.matching_time }                       
+                } else {
+                    ProgramState::Matching { time_left: time_left - time_delta }
+                };
+                board_vertices.clear();
+
+                let next_column = game_data.next_column;
+                gl_rendering::draw_column(
+                    &mut board_vertices,
+                    next_column,
+                    target,
+                    cell_size,
+                    cell_padding,
+                    0.5);
+                gl_rendering::draw_board_highlight_matches(
+                    &mut board_vertices,
+                    &game_data.board,
+                    &game_data.matches,
+                    target,
+                    cell_size,
+                    cell_padding);
+
+                let display_strings = gl_rendering::get_scores_display_strings(game_data.score, high_score, window_rect, char_size);
+
+                let mut charset_vertices = Vec::new();
+                for message in display_strings.iter() {
+                    charset.push_text_vertices(&mut charset_vertices, &message.0, message.1, char_size, graphics::WHITE);
+                }
+
+                unsafe {
+                    gl::Clear(gl::COLOR_BUFFER_BIT);
+
+                    // draw all pillars
+                    gl_util::draw_textured_colored_quads(
+                        &board_vertices,
+                        &shader_program,
+                        pillar_texture.id(),
+                        vertex_buffer,
+                        vertex_attributes_array
+                    );
+
+                    gl_util::draw_textured_colored_quads(
+                        &border_vertices,
+                        &shader_program,
+                        block_texture.id(),
+                        vertex_buffer,
+                        vertex_attributes_array
+                    );
+
+                    gl_util::draw_textured_colored_quads(
+                        &charset_vertices,
+                        &shader_program,
+                        charset_texture.id(),
+                        vertex_buffer,
+                        vertex_attributes_array
+                    );
+                }
+                window.gl_swap_window();
+            },
+            ProgramState::Fading { time_left, total_time } => {
+                if time_left < 0.0 {
+                    for p in &game_data.matches {
+                        game_data.score_accumulator += game_data.level + 1;
+                        game_data.board[*p] = None;
+                        program_state = ProgramState::Landed;                        
+                    }
+                } else {
+                    program_state = ProgramState::Fading { time_left: time_left - time_delta, total_time };
+                }
+
+                board_vertices.clear();
+
+                let next_column = game_data.next_column;
+                gl_rendering::draw_column(
+                    &mut board_vertices,
+                    next_column,
+                    target,
+                    cell_size,
+                    cell_padding,
+                    0.5);
+                let alpha = time_left / total_time;
+                gl_rendering::draw_board_fade_matches(
+                    &mut board_vertices,
+                    &game_data.board,
+                    &game_data.matches,
+                    alpha as f32,
+                    target,
+                    cell_size,
+                    cell_padding);
+
+                let display_strings = gl_rendering::get_scores_display_strings(game_data.score, high_score, window_rect, char_size);
+
+                let mut charset_vertices = Vec::new();
+                for message in display_strings.iter() {
+                    charset.push_text_vertices(&mut charset_vertices, &message.0, message.1, char_size, graphics::WHITE);
+                }
+
+                unsafe {
+                    gl::Clear(gl::COLOR_BUFFER_BIT);
+
+                    // draw all pillars
+                    gl_util::draw_textured_colored_quads(
+                        &board_vertices,
+                        &shader_program,
+                        pillar_texture.id(),
+                        vertex_buffer,
+                        vertex_attributes_array
+                    );
+
+                    gl_util::draw_textured_colored_quads(
+                        &border_vertices,
+                        &shader_program,
+                        block_texture.id(),
+                        vertex_buffer,
+                        vertex_attributes_array
+                    );
+
+                    gl_util::draw_textured_colored_quads(
+                        &charset_vertices,
+                        &shader_program,
+                        charset_texture.id(),
+                        vertex_buffer,
+                        vertex_attributes_array
+                    );
+                }
+                window.gl_swap_window();
+
+
             }
+            _ => {}
+
         }
     }
     high_score_file::write_high_score(high_score);
