@@ -1,4 +1,4 @@
-pub const VERTEX_SHADER_SRC: &'static str = r#"
+pub const VERTEX_SHADER_SRC: &str = r#"
     #version 330 core
 
     in vec2 position;
@@ -19,7 +19,7 @@ pub const VERTEX_SHADER_SRC: &'static str = r#"
     }
 "#;
 
-pub const FRAGMENT_SHADER_SRC: &'static str = r#"
+pub const FRAGMENT_SHADER_SRC: &str = r#"
     #version 330 core
 
     in VS_OUTPUT {

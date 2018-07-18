@@ -5,6 +5,7 @@ extern crate rand;
 #[macro_use] extern crate maplit;
 extern crate time;
 
+
 mod board;
 mod board_analysis;
 mod board_partitioning;
@@ -266,7 +267,7 @@ fn main() {
                 };
                 
                 let mut charset_vertices = Vec::new();
-                for message in display_strings.iter() {
+                for message in &display_strings {
                     charset.push_text_vertices(&mut charset_vertices, &message.0, message.1, char_size, graphics::WHITE);
                 }
                 unsafe {
@@ -334,7 +335,7 @@ fn main() {
                 let display_strings = gl_rendering::get_scores_display_strings(game_data.score, high_score, window_rect, char_size);
 
                 let mut charset_vertices = Vec::new();
-                for message in display_strings.iter() {
+                for message in &display_strings {
                     charset.push_text_vertices(&mut charset_vertices, &message.0, message.1, char_size, graphics::WHITE);
                 }
 
@@ -426,7 +427,7 @@ fn main() {
                 };
 
                 let mut charset_vertices = Vec::new();
-                for message in display_strings.iter() {
+                for message in &display_strings {
 
                     charset.push_text_vertices(&mut charset_vertices, &message.0, message.1, char_size, graphics::WHITE);
                     
@@ -481,7 +482,7 @@ fn main() {
                 
 
                 let mut charset_vertices = Vec::new();
-                for message in display_strings.iter() {
+                for message in &display_strings {
                     charset.push_text_vertices(&mut charset_vertices, &message.0, message.1, char_size, graphics::WHITE);
                 }
 
@@ -565,7 +566,7 @@ fn main() {
                 let display_strings = gl_rendering::get_scores_display_strings(game_data.score, high_score, window_rect, char_size);
 
                 let mut charset_vertices = Vec::new();
-                for message in display_strings.iter() {
+                for message in &display_strings {
                     charset.push_text_vertices(&mut charset_vertices, &message.0, message.1, char_size, graphics::WHITE);
                 }
 
@@ -633,7 +634,7 @@ fn main() {
                 let display_strings = gl_rendering::get_scores_display_strings(game_data.score, high_score, window_rect, char_size);
 
                 let mut charset_vertices = Vec::new();
-                for message in display_strings.iter() {
+                for message in &display_strings {
                     charset.push_text_vertices(&mut charset_vertices, &message.0, message.1, char_size, graphics::WHITE);
                 }
 

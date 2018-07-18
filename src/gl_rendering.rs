@@ -142,7 +142,7 @@ pub fn get_scores_display_strings(score: u64, high_score: u64, window_rect: grap
 pub fn draw_board_all_fading(
     vertex_buffer: &mut Vec<TCVertex2>,
     board: &Board,
-    fading: &Vec<(P2, f32)>,    
+    fading: &[(P2, f32)],    
     target: Vertex2,
     tile_size: Vertex2,
     tile_padding: Vertex2) {

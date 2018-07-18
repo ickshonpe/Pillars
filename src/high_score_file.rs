@@ -2,7 +2,7 @@ use std::path::Path;
 use std::fs::File;
 use std::io::prelude::*;
 
-const HIGH_SCORE_FILE: &'static str = ".high_scores";
+const HIGH_SCORE_FILE: &str = ".high_scores";
 
 /// attempt to load the high score from a file
 /// failure returns a high score of 0.
