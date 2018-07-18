@@ -61,7 +61,7 @@ impl Default for GameData {
 }
 
 use input::Buttons;
-pub fn update_game(game_data: &mut GameData, program_state: &mut ::ProgramState, input: &InputState, time_delta: f64) -> Option<Vec<P2>> {
+pub fn update_game(game_data: &mut GameData, program_state: &mut ::ProgramState, input: &InputState, time_delta: f64) {
     let game_board = &mut game_data.board;
     game_data.drop_cool_down += time_delta;
     game_data.move_cool_down -= time_delta;
@@ -121,51 +121,5 @@ pub fn update_game(game_data: &mut GameData, program_state: &mut ::ProgramState,
             game_board[p.x][p.y + i] = Some(jewel);
         }
     }
-    Some(vec![])
-    }
-
-
-/*
-        GameState::Landed => {
-            if !gravity::drop_jewels(game_board) {
-                game_data.matches = scan_for_matches(&game_board, game_data.min_gem_line_length);
-                if game_data.matches.is_empty() {
-                        game_data.game_state = GameState::Holding(0.25, 0.25);
-                        game_data.score += game_data.score_accumulator;
-                        if 0 < game_data.score_accumulator {
-                            game_data.last_accumulated_score = game_data.score_accumulator;
-                        }
-                        game_data.score_accumulator = 0;
-
-                } else {
-                    game_data.game_state = GameState::Matching(game_data.matching_time);
-                }
-            }
-        }
-        GameState::Matching(time_left) => {
-            if time_left < 0.0 {
-                for p in &game_data.matches {
-                    game_data.score_accumulator += game_data.level + 1;
-                    game_board[*p] = None;
-                    game_data.game_state = GameState::Landed;
-                }
-            } else {
-                game_data.game_state = GameState::Matching(time_left - time_delta);
-            }
-        },
-        GameState::Holding(time_left, total_time) => {
-            if time_left < 0.0 {
-                game_data.current_column = game_data.next_column;
-                game_data.next_column = Column::new(game_data.column_spawn_point);
-                game_data.drop_cool_down = -game_data.drop_speed * 0.5;
-                game_data.game_over = check_for_collision(&game_board, &game_data.current_column);
-                game_data.game_state = GameState::Playing;
-            } else {
-                game_data.game_state = GameState::Holding(time_left - time_delta, total_time);
-            }
-        }
-
-    }
-    None
 }
-*/
+

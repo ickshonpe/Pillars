@@ -296,7 +296,7 @@ fn main() {
                     continue 'game_loop;
                 }
 
-                let _matches = game::update_game(&mut game_data, &mut program_state, &input_state, time_delta);
+                game::update_game(&mut game_data, &mut program_state, &input_state, time_delta);
 
                 board_vertices.clear();
 
