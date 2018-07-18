@@ -1,6 +1,6 @@
 [package]
 name = "pillars_sdl"
-version = "0.1.0"
+version = "0.5.0"
 authors = ["David Curthoys <david.curthoys@googlemail.com>"]
 
 [dependencies]

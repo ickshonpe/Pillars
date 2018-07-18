@@ -30,12 +30,12 @@ use gl::types::*;
 use graphics::{Vertex2, Color, TCVertex2, Rectangle};
 use sdl2::controller::Button;
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum ProgramState {
     TitleScreen,
     Playing,
     Paused,
-    GameOver(f64),
+    GameOver(f64, f64, Vec<(P2, f32)>, Vec<(P2, f32)>),
     Landed,
     Holding {time_left: f64, total_time: f64 },
     Fading {time_left: f64, total_time: f64 },
@@ -292,7 +292,22 @@ fn main() {
                     if high_score < last_score {
                         high_score = last_score;
                     }
-                    program_state = ProgramState::GameOver(5.0);
+                    let gameover_pillars = {
+                        let mut temp = Vec::new();
+                        let board = &game_data.board; 
+                        for x in 0..board.width() {
+                            for y in 0..board.height() {
+                                let p = P2::new(x, y);                                
+                                if board[p].is_some() {
+                                  temp.push((p, 1.0_f32));
+                                }
+                            }
+                        }
+                        use rand::{thread_rng, Rng};
+                        thread_rng().shuffle(&mut temp);                        
+                        temp
+                    };
+                    program_state = ProgramState::GameOver(10.0, 0.3, Vec::new(), gameover_pillars);
                     continue 'game_loop;
                 }
 
@@ -354,31 +369,55 @@ fn main() {
                 window.gl_swap_window();
 
             },
-            ProgramState::GameOver(time_left) => {
+            ProgramState::GameOver(time_left, fade_time, mut fading, mut pillars) => {
                 let time_left = time_left - time_delta;
-                program_state =
-                    if time_left < 0.
-                    || input_state.just_pressed(input::Buttons::Start) {
-                        ProgramState::TitleScreen
-                    } else {
-                        ProgramState::GameOver(time_left)
-                    };
+                let mut fade_time = fade_time - time_delta;
+                if fade_time < 0. {
+                    if let Some(next) = pillars.pop() {                    
+                        fading.push(next);
+                    }
+                    fade_time = 0.3;
+                }
+                for fader in &mut fading {
+                    fader.1 -= time_delta as f32;
+                }
+
+
+                
+                
                 board_vertices.clear();
                 let next_column = game_data.next_column;
-                gl_rendering::draw_column(
-                    &mut board_vertices,
-                    next_column,
-                    target,
-                    cell_size,
-                    cell_padding,
-                    0.5);
-                gl_rendering::draw_board(
+                // gl_rendering::draw_column(
+                //     &mut board_vertices,
+                //     next_column,
+                //     target,
+                //     cell_size,
+                //     cell_padding,
+                //     0.5);
+                // gl_rendering::draw_board(
+                //     &mut board_vertices,
+                //     &game_data.board,
+                //     game_data.current_column,
+                //     target,
+                //     cell_size,
+                //     cell_padding);
+                
+                gl_rendering::draw_board_all_fading(
                     &mut board_vertices,
                     &game_data.board,
-                    game_data.current_column,
+                    &fading,
                     target,
                     cell_size,
                     cell_padding);
+
+                program_state =
+                    if time_left < 0.
+                        || input_state.just_pressed(input::Buttons::Start) {
+                        ProgramState::TitleScreen
+                        } else {
+                        ProgramState::GameOver(time_left, fade_time, fading, pillars)
+                    };
+
 
                 let display_strings = {
                     let mut temp = gl_rendering::get_scores_display_strings(game_data.score, high_score, window_rect, char_size);
@@ -392,6 +431,8 @@ fn main() {
                     charset.push_text_vertices(&mut charset_vertices, &message.0, message.1, char_size, graphics::WHITE);
                     
                 }
+
+
 
 
 

@@ -137,3 +137,54 @@ pub fn get_scores_display_strings(score: u64, high_score: u64, window_rect: grap
         (format!("{:06}", score).into_bytes(), [window_rect.left() + char_size[0] * 3., window_rect.top() - char_size[1] * 1.5])
     ]
 }
+
+
+pub fn draw_board_all_fading(
+    vertex_buffer: &mut Vec<TCVertex2>,
+    board: &Board,
+    fading: &Vec<(P2, f32)>,    
+    target: Vertex2,
+    tile_size: Vertex2,
+    tile_padding: Vertex2) {
+    
+    
+    for x in 0..board.width() {
+        for y in 0..board.height() {
+            if let Some(jewel) = board[x][y] {
+                let dest_x = (x as f32 * (tile_size[0] + tile_padding[0]) + tile_padding[0]) as f32 + target[0];
+                let dest_y = (y as f32 * (tile_size[1] + tile_padding[1]) + tile_padding[1]) as f32 + target[1];
+                let p = P2::new(x, y);
+                let mut done = false;
+                for fader in fading.iter() {
+                    if p == fader.0 {
+                         let color = jewel.color_gl();                        
+                        let fade = {
+                            if fader.1 < 0. {
+                                0.
+                            } else {
+                                fader.1
+                            }
+                        };
+                        let y = fade;
+                        let x = 1. - fade;
+
+                        let faded_color = 
+                            [
+                                0.8 * x + color[0] * y,
+                                0.8 * x + color[1] * y,
+                                0.8 * x + color[2] * y,
+                                1.0
+                            ];
+                        push_quad_vertices(vertex_buffer, [dest_x, dest_y], tile_size, faded_color);
+                        done = true;
+                        break;
+                    }
+                }
+
+                if !done {
+                     draw_jewel(vertex_buffer, [dest_x, dest_y], tile_size, jewel);
+                }
+            }
+        }
+    }
+}
