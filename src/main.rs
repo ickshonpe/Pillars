@@ -292,7 +292,7 @@ fn main() {
                     if high_score < last_score {
                         high_score = last_score;
                     }
-                    program_state = ProgramState::GameOver(3.0);
+                    program_state = ProgramState::GameOver(5.0);
                     continue 'game_loop;
                 }
 
@@ -357,10 +357,11 @@ fn main() {
             ProgramState::GameOver(time_left) => {
                 let time_left = time_left - time_delta;
                 program_state =
-                    if time_left < 0. {
+                    if time_left < 0.
+                    || input_state.just_pressed(input::Buttons::Start) {
                         ProgramState::TitleScreen
                     } else {
-                        ProgramState::GameOver(time_delta)
+                        ProgramState::GameOver(time_left)
                     };
                 board_vertices.clear();
                 let next_column = game_data.next_column;
@@ -379,12 +380,20 @@ fn main() {
                     cell_size,
                     cell_padding);
 
-                let display_strings = gl_rendering::get_scores_display_strings(game_data.score, high_score, window_rect, char_size);
+                let display_strings = {
+                    let mut temp = gl_rendering::get_scores_display_strings(game_data.score, high_score, window_rect, char_size);
+                    temp.push(("game over".to_string().into_bytes(), [right * 0.5 - 4.5 * char_size[0], top * 0.5]));
+                    temp
+                };
 
                 let mut charset_vertices = Vec::new();
                 for message in display_strings.iter() {
+
                     charset.push_text_vertices(&mut charset_vertices, &message.0, message.1, char_size, graphics::WHITE);
+                    
                 }
+
+
 
                 unsafe {
                     gl::Clear(gl::COLOR_BUFFER_BIT);
@@ -467,8 +476,7 @@ fn main() {
                     game_data.current_column = game_data.next_column;
                     game_data.next_column = columns::Column::new(game_data.column_spawn_point);
                     game_data.drop_cool_down = -game_data.drop_speed * 0.5;
-                    game_data.game_over = board_analysis::check_for_collision(&game_data.board, &game_data.current_column);
-                    //game_data.game_state = game::GameState::Playing;
+                    game_data.game_over = board_analysis::check_for_collision(&game_data.board, &game_data.current_column);                    
                     program_state = ProgramState::Playing
                 } else {
                     program_state = ProgramState::Holding{ time_left: time_left - time_delta, total_time };
