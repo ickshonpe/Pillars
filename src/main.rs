@@ -307,7 +307,7 @@ fn main() {
                         thread_rng().shuffle(&mut temp);                        
                         temp
                     };
-                    program_state = ProgramState::GameOver(10.0, 0.3, Vec::new(), gameover_pillars);
+                    program_state = ProgramState::GameOver(10.0, 0.2, Vec::new(), gameover_pillars);
                     continue 'game_loop;
                 }
 
@@ -376,7 +376,7 @@ fn main() {
                     if let Some(next) = pillars.pop() {                    
                         fading.push(next);
                     }
-                    fade_time = 0.3;
+                    fade_time = 0.2;
                 }
                 for fader in &mut fading {
                     fader.1 -= time_delta as f32;
