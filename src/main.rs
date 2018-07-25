@@ -90,11 +90,11 @@ fn main() {
     gl::load_with(|s| video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void);
 
     let pillar_bytes = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/pillar.png"));
-    let pillar_texture = textures::load_png_into_texture(std::io::Cursor::new(&pillar_bytes[..]));
+    let pillar_texture = textures::Texture::from_png(std::io::Cursor::new(&pillar_bytes[..]));
     let charset_bytes = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/charset.png"));
-    let charset_texture = textures::load_png_into_texture(std::io::Cursor::new(&charset_bytes[..]));
+    let charset_texture = textures::Texture::from_png(std::io::Cursor::new(&charset_bytes[..]));
     let block_bytes = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/block.png"));
-    let block_texture = textures::load_png_into_texture(std::io::Cursor::new(&block_bytes[..]));
+    let block_texture = textures::Texture::from_png(std::io::Cursor::new(&block_bytes[..]));
 
     let controller_subsystem = sdl_context.game_controller().unwrap();
     let mut controllers = {
@@ -234,14 +234,14 @@ fn main() {
 
     let mut program_state = ProgramState::TitleScreen;
 
-    'game_loop: loop {
-        
+    'game_loop: loop {    
         // things to do every frame
+        std::thread::sleep_ms(2);       // I guess we better not use *all* the cpu
         let current_ns = time::precise_time_ns();
         let mut frame_time_ns = current_ns - last_ns;
         last_ns = current_ns;
         if frame_time_ns == 0 {
-            // need a really fast computer for this to matter?
+            // don't need to bother with this 
             frame_time_ns = 1;
         };
         let time_delta = (1. / 1_000_000_000.) * (frame_time_ns as f64);
