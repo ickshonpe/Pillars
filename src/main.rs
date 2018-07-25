@@ -37,6 +37,7 @@ pub enum ProgramState {
     Playing,
     Paused,
     GameOver(f64, f64, Vec<(P2, f32)>, Vec<(P2, f32)>),
+    Grounded,
     Landed,
     Holding {time_left: f64, total_time: f64 },
     Fading {time_left: f64, total_time: f64 },
@@ -370,6 +371,94 @@ fn main() {
                 window.gl_swap_window();
 
             },
+            ProgramState::Grounded => {
+                if input_state.just_pressed(input::Buttons::Start) {
+                    program_state = ProgramState::Paused;
+                    continue 'game_loop;
+                }
+
+                if game_data.game_over  {
+                    last_score = game_data.score;
+                    if high_score < last_score {
+                        high_score = last_score;
+                    }
+                    let gameover_pillars = {
+                        let mut temp = Vec::new();
+                        let board = &game_data.board; 
+                        for x in 0..board.width() {
+                            for y in 0..board.height() {
+                                let p = P2::new(x, y);                                
+                                if board[p].is_some() {
+                                  temp.push((p, 1.0_f32));
+                                }
+                            }
+                        }
+                        use rand::{thread_rng, Rng};
+                        thread_rng().shuffle(&mut temp);                        
+                        temp
+                    };
+                    program_state = ProgramState::GameOver(10.0, 0.2, Vec::new(), gameover_pillars);
+                    continue 'game_loop;
+                }
+
+                game::update_game_grounded(&mut game_data, &mut program_state, &input_state, time_delta);
+
+                board_vertices.clear();
+
+                let next_column = game_data.next_column;
+                gl_rendering::draw_column(
+                    &mut board_vertices,
+                    next_column,
+                    target,
+                    cell_size,
+                    cell_padding,
+                    0.5);
+                gl_rendering::draw_board(
+                    &mut board_vertices,
+                    &game_data.board,
+                    game_data.current_column,
+                    target,
+                    cell_size,
+                    cell_padding);
+
+                let display_strings = gl_rendering::get_scores_display_strings(game_data.score, high_score, window_rect, char_size);
+
+                let mut charset_vertices = Vec::new();
+                for message in &display_strings {
+                    charset.push_text_vertices(&mut charset_vertices, &message.0, message.1, char_size, graphics::WHITE);
+                }
+
+                unsafe {
+                    gl::Clear(gl::COLOR_BUFFER_BIT);
+
+                    // draw all pillars
+                    gl_util::draw_textured_colored_quads(
+                        &board_vertices,
+                        &shader_program,
+                        pillar_texture.id(),
+                        vertex_buffer,
+                        vertex_attributes_array
+                    );
+
+                    gl_util::draw_textured_colored_quads(
+                        &border_vertices,
+                        &shader_program,
+                        block_texture.id(),
+                        vertex_buffer,
+                        vertex_attributes_array
+                    );
+
+                    gl_util::draw_textured_colored_quads(
+                        &charset_vertices,
+                        &shader_program,
+                        charset_texture.id(),
+                        vertex_buffer,
+                        vertex_attributes_array
+                    );
+                }
+                window.gl_swap_window();
+
+            },
             ProgramState::GameOver(time_left, fade_time, mut fading, mut pillars) => {
                 let time_left = time_left - time_delta;
                 let mut fade_time = fade_time - time_delta;
@@ -388,21 +477,7 @@ fn main() {
                 
                 board_vertices.clear();
                 let next_column = game_data.next_column;
-                // gl_rendering::draw_column(
-                //     &mut board_vertices,
-                //     next_column,
-                //     target,
-                //     cell_size,
-                //     cell_padding,
-                //     0.5);
-                // gl_rendering::draw_board(
-                //     &mut board_vertices,
-                //     &game_data.board,
-                //     game_data.current_column,
-                //     target,
-                //     cell_size,
-                //     cell_padding);
-                
+                                
                 gl_rendering::draw_board_all_fading(
                     &mut board_vertices,
                     &game_data.board,
@@ -528,7 +603,7 @@ fn main() {
                 if !gravity::drop_jewels(&mut game_data.board) {
                     game_data.matches = board_analysis::scan_for_matches(&game_data.board, game_data.min_gem_line_length);
                     if game_data.matches.is_empty() {
-                        program_state = ProgramState::Holding{time_left: 0.25, total_time: 0.25};
+                        program_state = ProgramState::Holding{time_left: 0.1, total_time: 0.1};
                         game_data.score += game_data.score_accumulator;
                         if 0 < game_data.score_accumulator {
                             game_data.last_accumulated_score = game_data.score_accumulator;

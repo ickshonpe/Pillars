@@ -28,7 +28,8 @@ pub struct GameData {
     pub matching_time: f64,
     pub matches: HashSet<P2>,
     pub game_over: bool,
-    pub last_accumulated_score: u64
+    pub last_accumulated_score: u64,
+    pub grounded_time: f64
 
 }
 
@@ -55,7 +56,8 @@ impl Default for GameData {
             matching_time: 0.3,
             matches: HashSet::new(),
             last_accumulated_score: 0,
-            game_over: false
+            game_over: false,
+            grounded_time: 0.5
         }
     }
 }
@@ -109,51 +111,21 @@ pub fn update_game(game_data: &mut GameData, program_state: &mut ::ProgramState,
 
     if check_for_collision(&game_board, &game_data.current_column) {
                 game_data.current_column.position.y += 1;
-                *program_state = ::ProgramState::Landed;
+                *program_state = ::ProgramState::Grounded;
     } else if game_data.current_column.position.y == 0 {
-        *program_state = ::ProgramState::Landed;
+        *program_state = ::ProgramState::Grounded;
     }
 
-    if *program_state == ::ProgramState::Landed {
-        let p = game_data.current_column.position;
-        for i in 0..3 {
-            let jewel = game_data.current_column[i];
-            game_board[p.x][p.y + i] = Some(jewel);
-        }
+    if *program_state == ::ProgramState::Grounded {
+        game_data.grounded_time = 0.2;
+        
+        
     }
 }
 
 pub fn update_game_grounded(game_data: &mut GameData, program_state: &mut ::ProgramState, input: &InputState, time_delta: f64) {
     let game_board = &mut game_data.board;
-    game_data.drop_cool_down += time_delta;
-    game_data.move_cool_down -= time_delta;
     game_data.rotate_cool_down -= time_delta;
-    if game_data.level_time < 0.0 {
-        game_data.level += 1;
-        game_data.level_time = 20.0;
-        game_data.drop_speed *= 0.9;
-    }
-    game_data.level_time -= time_delta;
-    if game_data.move_cool_down < 0.0 {
-        if input.down(Buttons::Left) {
-            if game_data.current_column.position.x > 0 {
-                game_data.current_column.position.x -= 1;
-                if check_for_collision(&game_board, &game_data.current_column) {
-                    game_data.current_column.position.x += 1;
-                } else {
-                    game_data.move_cool_down = game_data.move_speed;
-                }
-            }
-        } else if input.down(Buttons::Right)
-            && game_data.current_column.position.x < game_board.width() - 1 {
-            game_data.current_column.position.x += 1;
-            if check_for_collision(&game_board, &game_data.current_column) {
-                game_data.current_column.position.x -= 1;
-            } else {
-                game_data.move_cool_down = game_data.move_speed;
-            }
-        }
-    }
     if game_data.rotate_cool_down < 0.0 {
         if input.just_pressed(Buttons::CycleUp) {
             game_data.current_column.cycle_up();
@@ -163,24 +135,61 @@ pub fn update_game_grounded(game_data: &mut GameData, program_state: &mut ::Prog
             game_data.rotate_cool_down = game_data.rotate_speed;
         }
     }
-    if game_data.drop_cool_down > game_data.drop_speed
-        || (input.down(Buttons::Down) && game_data.drop_cool_down > 0.05) {
-        game_data.current_column.position.y -= 1;
-        game_data.drop_cool_down = 0.0;
-    }
-
-    if check_for_collision(&game_board, &game_data.current_column) {
-                game_data.current_column.position.y += 1;
-                *program_state = ::ProgramState::Landed;
-    } else if game_data.current_column.position.y == 0 {
+    
+    game_data.grounded_time -= time_delta;
+    if game_data.grounded_time < 0. {
         *program_state = ::ProgramState::Landed;
-    }
-
-    if *program_state == ::ProgramState::Landed {
-        let p = game_data.current_column.position;
         for i in 0..3 {
+            let p = game_data.current_column.position;
             let jewel = game_data.current_column[i];
             game_board[p.x][p.y + i] = Some(jewel);
         }
     }
+    // if game_data.level_time < 0.0 {
+    //     game_data.level += 1;
+    //     game_data.level_time = 20.0;
+    //     game_data.drop_speed *= 0.9;
+    // }
+    // game_data.level_time -= time_delta;
+    // if game_data.move_cool_down < 0.0 {
+    //     if input.down(Buttons::Left) {
+    //         if game_data.current_column.position.x > 0 {
+    //             game_data.current_column.position.x -= 1;
+    //             if check_for_collision(&game_board, &game_data.current_column) {
+    //                 game_data.current_column.position.x += 1;
+    //             } else {
+    //                 game_data.move_cool_down = game_data.move_speed;
+    //             }
+    //         }
+    //     } else if input.down(Buttons::Right)
+    //         && game_data.current_column.position.x < game_board.width() - 1 {
+    //         game_data.current_column.position.x += 1;
+    //         if check_for_collision(&game_board, &game_data.current_column) {
+    //             game_data.current_column.position.x -= 1;
+    //         } else {
+    //             game_data.move_cool_down = game_data.move_speed;
+    //         }
+    //     }
+    // }
+    
+    // if game_data.drop_cool_down > game_data.drop_speed
+    //     || (input.down(Buttons::Down) && game_data.drop_cool_down > 0.05) {
+    //     game_data.current_column.position.y -= 1;
+    //     game_data.drop_cool_down = 0.0;
+    // }
+
+    // if check_for_collision(&game_board, &game_data.current_column) {
+    //             game_data.current_column.position.y += 1;
+    //             *program_state = ::ProgramState::Landed;
+    // } else if game_data.current_column.position.y == 0 {
+    //     *program_state = ::ProgramState::Landed;
+    // }
+
+    // if *program_state == ::ProgramState::Landed {
+    //     let p = game_data.current_column.position;
+    //     for i in 0..3 {
+    //         let jewel = game_data.current_column[i];
+    //         game_board[p.x][p.y + i] = Some(jewel);
+    //     }
+    // }
 }
