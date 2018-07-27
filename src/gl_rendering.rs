@@ -22,7 +22,7 @@ pub fn push_quad_vertices(vertex_buffer: &mut Vec<TCVertex2>, position: Vertex2,
 pub fn draw_board(
     mut vertex_buffer: &mut Vec<TCVertex2>,
     board: &Board,
-    column: ::columns::Column,
+    column: Option<::columns::Column>,
     target: Vertex2,
     tile_size: Vertex2,
     tile_padding: Vertex2) {
@@ -36,13 +36,16 @@ pub fn draw_board(
             }
         }
     }
+    if let Some(column) = column {
 
-    let mut p = column.position;
-    for i in 0..3 {
-        let dest_x = (p.x as f32 * (tile_size[0] + tile_padding[0]) + tile_padding[0]) as f32 + target[0];
-        let dest_y = (p.y as f32 * (tile_size[1] + tile_padding[1]) + tile_padding[1]) as f32 + target[1];
-        draw_jewel(&mut vertex_buffer, [dest_x, dest_y],tile_size, column.jewels[i]);
-        p.up();
+    
+        let mut p = column.position;
+        for i in 0..3 {
+            let dest_x = (p.x as f32 * (tile_size[0] + tile_padding[0]) + tile_padding[0]) as f32 + target[0];
+            let dest_y = (p.y as f32 * (tile_size[1] + tile_padding[1]) + tile_padding[1]) as f32 + target[1];
+            draw_jewel(&mut vertex_buffer, [dest_x, dest_y],tile_size, column.jewels[i]);
+            p.up();
+        }
     }
 }
 

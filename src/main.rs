@@ -328,7 +328,7 @@ fn main() {
                 gl_rendering::draw_board(
                     &mut board_vertices,
                     &game_data.board,
-                    game_data.current_column,
+                    Some(game_data.current_column),
                     target,
                     cell_size,
                     cell_padding);
@@ -416,7 +416,7 @@ fn main() {
                 gl_rendering::draw_board(
                     &mut board_vertices,
                     &game_data.board,
-                    game_data.current_column,
+                    Some(game_data.current_column),
                     target,
                     cell_size,
                     cell_padding);
@@ -594,16 +594,74 @@ fn main() {
                     game_data.next_column = columns::Column::new(game_data.column_spawn_point);
                     game_data.drop_cool_down = -game_data.drop_speed * 0.5;
                     game_data.game_over = board_analysis::check_for_collision(&game_data.board, &game_data.current_column);                    
-                    program_state = ProgramState::Playing
+                    program_state = ProgramState::Playing;
                 } else {
                     program_state = ProgramState::Holding{ time_left: time_left - time_delta, total_time };
+                
+
+                board_vertices.clear();
+                let alpha: f32 = ((total_time - time_left) / total_time) as f32 * 0.5;
+                let next_column = game_data.next_column;
+                
+                gl_rendering::draw_column(
+                    &mut board_vertices,
+                    next_column,
+                    target,
+                    cell_size,
+                    cell_padding,
+                    alpha + 0.5);
+                gl_rendering::draw_board(
+                    &mut board_vertices,
+                    &game_data.board,
+                    None,
+                    target,
+                    cell_size,
+                    cell_padding);
+
+                let display_strings = gl_rendering::get_scores_display_strings(game_data.score, high_score, window_rect, char_size);
+
+                let mut charset_vertices = Vec::new();
+                for message in &display_strings {
+                    charset.push_text_vertices(&mut charset_vertices, &message.0, message.1, char_size, graphics::WHITE);
                 }
+
+                unsafe {
+                    gl::Clear(gl::COLOR_BUFFER_BIT);
+
+                    // draw all pillars
+                    gl_util::draw_textured_colored_quads(
+                        &board_vertices,
+                        &shader_program,
+                        pillar_texture.id(),
+                        vertex_buffer,
+                        vertex_attributes_array
+                    );
+
+                    gl_util::draw_textured_colored_quads(
+                        &border_vertices,
+                        &shader_program,
+                        block_texture.id(),
+                        vertex_buffer,
+                        vertex_attributes_array
+                    );
+
+                    gl_util::draw_textured_colored_quads(
+                        &charset_vertices,
+                        &shader_program,
+                        charset_texture.id(),
+                        vertex_buffer,
+                        vertex_attributes_array
+                    );
+                }
+                window.gl_swap_window();
+                }
+
             },
             ProgramState::Landed => {
                 if !gravity::drop_jewels(&mut game_data.board) {
                     game_data.matches = board_analysis::scan_for_matches(&game_data.board, game_data.min_gem_line_length);
                     if game_data.matches.is_empty() {
-                        program_state = ProgramState::Holding{time_left: 0.1, total_time: 0.1};
+                        program_state = ProgramState::Holding{time_left: 0.25, total_time: 0.25};
                         game_data.score += game_data.score_accumulator;
                         if 0 < game_data.score_accumulator {
                             game_data.last_accumulated_score = game_data.score_accumulator;
