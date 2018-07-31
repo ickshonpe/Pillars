@@ -1,6 +1,6 @@
-use std::ops::{Index, IndexMut};
-use point2::*;
 use columns::*;
+use point2::*;
+use std::ops::{Index, IndexMut};
 
 impl Size2 for Board {
     fn width(&self) -> usize {
@@ -37,9 +37,8 @@ impl IndexMut<usize> for Board {
     }
 }
 
-
 pub struct Board {
-    data: Vec<Vec<Option<Jewel>>>
+    data: Vec<Vec<Option<Jewel>>>,
 }
 
 impl Board {
@@ -49,4 +48,3 @@ impl Board {
         }
     }
 }
-

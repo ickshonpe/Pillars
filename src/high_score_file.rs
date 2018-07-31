@@ -1,6 +1,6 @@
-use std::path::Path;
 use std::fs::File;
 use std::io::prelude::*;
+use std::path::Path;
 
 const HIGH_SCORE_FILE: &str = ".high_scores";
 

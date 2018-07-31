@@ -1,8 +1,6 @@
 use board::*;
 use point2::*;
 
-
-
 pub fn drop_jewels(board: &mut Board) -> bool {
     let mut dropped = false;
     for x in 0..board.width() {

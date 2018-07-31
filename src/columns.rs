@@ -1,8 +1,8 @@
-use point2::P2;
-use std::ops::IndexMut;
-use std::ops::Index;
-use random;
 use graphics;
+use point2::P2;
+use random;
+use std::ops::Index;
+use std::ops::IndexMut;
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum Jewel {
@@ -16,11 +16,11 @@ pub enum Jewel {
 impl Jewel {
     pub fn color_gl(self) -> graphics::Color {
         match self {
-            Jewel::Red => { graphics::RED }
-            Jewel::Yellow => { graphics::YELLOW }
-            Jewel::Green => { graphics::GREEN }
-            Jewel::Blue => { graphics::BLUE }
-            Jewel::Orange => { graphics::ORANGE }
+            Jewel::Red => graphics::RED,
+            Jewel::Yellow => graphics::YELLOW,
+            Jewel::Green => graphics::GREEN,
+            Jewel::Blue => graphics::BLUE,
+            Jewel::Orange => graphics::ORANGE,
         }
     }
 }
@@ -28,7 +28,7 @@ impl Jewel {
 #[derive(Copy, Clone, Debug)]
 pub struct Column {
     pub jewels: [Jewel; 3],
-    pub position: P2
+    pub position: P2,
 }
 
 impl Index<usize> for Column {
@@ -47,8 +47,12 @@ impl IndexMut<usize> for Column {
 impl Column {
     pub fn new(position: P2) -> Self {
         Column {
-            jewels: [select_random_jewel(), select_random_jewel(), select_random_jewel()],
-            position
+            jewels: [
+                select_random_jewel(),
+                select_random_jewel(),
+                select_random_jewel(),
+            ],
+            position,
         }
     }
 
@@ -73,7 +77,13 @@ impl Column {
 
 impl Jewel {
     pub fn all_jewels() -> [Jewel; 5] {
-        [Jewel::Red, Jewel::Orange, Jewel::Green, Jewel::Blue, Jewel::Yellow]
+        [
+            Jewel::Red,
+            Jewel::Orange,
+            Jewel::Green,
+            Jewel::Blue,
+            Jewel::Yellow,
+        ]
     }
 }
 

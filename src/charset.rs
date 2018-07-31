@@ -1,7 +1,7 @@
-use graphics::{Vertex2, TCVertex2, Color};
+use graphics::{Color, TCVertex2, Vertex2};
 
 pub struct Charset {
-    texture_vertices: Vec<[Vertex2; 4]>
+    texture_vertices: Vec<[Vertex2; 4]>,
 }
 
 impl Charset {
@@ -19,15 +19,24 @@ impl Charset {
                     [min_x, max_y],
                     [min_x, min_y],
                     [max_x, min_y],
-                    [max_x, max_y]
+                    [max_x, max_y],
                 ];
                 vertices.push(tvs);
             }
         }
-        Charset { texture_vertices: vertices }
+        Charset {
+            texture_vertices: vertices,
+        }
     }
 
-    pub fn push_text_vertices(&self, vertices: &mut Vec<TCVertex2>, text: &[u8], position: Vertex2, char_size: Vertex2, color: Color) {
+    pub fn push_text_vertices(
+        &self,
+        vertices: &mut Vec<TCVertex2>,
+        text: &[u8],
+        position: Vertex2,
+        char_size: Vertex2,
+        color: Color,
+    ) {
         //let mut vertices = Vec::with_capacity(text.len() * 6);
         for i in 0..text.len() {
             let char = text[i];
@@ -40,12 +49,12 @@ impl Charset {
             let min_y = position[1];
             let max_x = min_x + char_size[0];
             let max_y = min_y + char_size[1];
-            vertices.push(TCVertex2([min_x, min_y], coords[0],color));
-            vertices.push(TCVertex2([max_x, max_y], coords[2],color));
-            vertices.push(TCVertex2([min_x, max_y], coords[1],color));
-            vertices.push(TCVertex2([min_x, min_y], coords[0],color));
-            vertices.push(TCVertex2([max_x, max_y], coords[2],color));
-            vertices.push(TCVertex2([max_x, min_y], coords[3],color));
+            vertices.push(TCVertex2([min_x, min_y], coords[0], color));
+            vertices.push(TCVertex2([max_x, max_y], coords[2], color));
+            vertices.push(TCVertex2([min_x, max_y], coords[1], color));
+            vertices.push(TCVertex2([min_x, min_y], coords[0], color));
+            vertices.push(TCVertex2([max_x, max_y], coords[2], color));
+            vertices.push(TCVertex2([max_x, min_y], coords[3], color));
         }
     }
 }

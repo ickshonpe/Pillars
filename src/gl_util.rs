@@ -1,10 +1,10 @@
 use gl;
-use gl::types::{GLuint, GLint, GLchar};
+use gl::types::{GLchar, GLint, GLuint};
 use std;
 use std::ffi::{CStr, CString};
 
 pub struct Shader {
-    id: GLuint
+    id: GLuint,
 }
 impl Shader {
     pub fn id(&self) -> gl::types::GLuint {
@@ -42,8 +42,9 @@ pub fn compile_shader(shader_source: &CStr, shader_type: GLuint) -> Result<Shade
     unsafe {
         gl::GetShaderiv(id, gl::COMPILE_STATUS, &mut success);
     }
-    if success != 0 {    // 0 is false in C.
-        Ok(Shader{ id })
+    if success != 0 {
+        // 0 is false in C.
+        Ok(Shader { id })
     } else {
         let mut len: GLint = 0; // Dummy value
         unsafe {
@@ -55,7 +56,7 @@ pub fn compile_shader(shader_source: &CStr, shader_type: GLuint) -> Result<Shade
                 id,
                 len,
                 std::ptr::null_mut(),
-                error_buffer.as_ptr() as *mut GLchar
+                error_buffer.as_ptr() as *mut GLchar,
             );
         }
         Err(error_buffer.to_string_lossy().into_owned())
@@ -63,7 +64,7 @@ pub fn compile_shader(shader_source: &CStr, shader_type: GLuint) -> Result<Shade
 }
 
 pub struct ShaderProgram {
-    id: GLuint
+    id: GLuint,
 }
 
 impl ShaderProgram {
@@ -74,7 +75,9 @@ impl ShaderProgram {
 
 pub fn link_program(shaders: &[Shader]) -> Result<ShaderProgram, String> {
     unsafe {
-        let program = ShaderProgram { id: gl::CreateProgram() };
+        let program = ShaderProgram {
+            id: gl::CreateProgram(),
+        };
         for shader in shaders {
             gl::AttachShader(program.id, shader.id);
         }
@@ -84,10 +87,10 @@ pub fn link_program(shaders: &[Shader]) -> Result<ShaderProgram, String> {
         }
         let mut success: GLint = 0;
         gl::GetProgramiv(program.id, gl::LINK_STATUS, &mut success);
-        if success != 0 { // 0 is failure
+        if success != 0 {
+            // 0 is failure
             Ok(program)
-        }
-        else {
+        } else {
             let mut len: GLint = 0;
             gl::GetProgramiv(program.id, gl::INFO_LOG_LENGTH, &mut len);
             let mut error_buffer = create_c_string_buffer(len as usize);
@@ -95,7 +98,7 @@ pub fn link_program(shaders: &[Shader]) -> Result<ShaderProgram, String> {
                 program.id,
                 len,
                 std::ptr::null_mut(),
-                error_buffer.as_ptr() as *mut GLchar
+                error_buffer.as_ptr() as *mut GLchar,
             );
             Err(error_buffer.to_string_lossy().into_owned())
         }
@@ -124,16 +127,20 @@ impl ShaderProgram {
     }
 
     pub fn get_uniform(&self, name: &CStr) -> GLint {
-        unsafe {
-            gl::GetUniformLocation(self.id, name.as_ptr() as *const GLchar)
-        }
+        unsafe { gl::GetUniformLocation(self.id, name.as_ptr() as *const GLchar) }
     }
 }
 
-use gl_util;
 use gl::types::*;
+use gl_util;
 use graphics::TCVertex2;
-pub fn draw_textured_colored_quads(vertices: &[TCVertex2], shader_program: &gl_util::ShaderProgram, texture: GLuint, vertex_buffer:GLuint, vertex_attributes_array:GLuint) {
+pub fn draw_textured_colored_quads(
+    vertices: &[TCVertex2],
+    shader_program: &gl_util::ShaderProgram,
+    texture: GLuint,
+    vertex_buffer: GLuint,
+    vertex_attributes_array: GLuint,
+) {
     gl_util::use_program(&shader_program);
     unsafe {
         gl::BindTexture(gl::TEXTURE_2D, texture);
@@ -142,7 +149,7 @@ pub fn draw_textured_colored_quads(vertices: &[TCVertex2], shader_program: &gl_u
             gl::ARRAY_BUFFER,
             (vertices.len() * std::mem::size_of::<TCVertex2>()) as GLsizeiptr,
             vertices.as_ptr() as *const GLvoid,
-            gl::STATIC_DRAW
+            gl::STATIC_DRAW,
         );
         gl::BindVertexArray(vertex_attributes_array);
         gl::DrawArrays(gl::TRIANGLES, 0, vertices.len() as GLint);

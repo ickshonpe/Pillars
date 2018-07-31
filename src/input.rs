@@ -8,12 +8,12 @@ pub enum Buttons {
     CycleUp,
     CycleDown,
     Start,
-    Quit
+    Quit,
 }
 
 #[derive(Clone, Default)]
 struct InputData {
-    buttons: HashSet<Buttons>
+    buttons: HashSet<Buttons>,
 }
 
 impl InputData {
@@ -34,7 +34,7 @@ impl InputData {
 #[derive(Default)]
 pub struct InputState {
     current: InputData,
-    previous: InputData
+    previous: InputData,
 }
 
 impl InputState {
@@ -45,12 +45,10 @@ impl InputState {
         self.current.up(button)
     }
     pub fn just_pressed(&self, button: Buttons) -> bool {
-        self.down(button)
-            && self.previous.up(button)
+        self.down(button) && self.previous.up(button)
     }
     pub fn just_released(&self, button: Buttons) -> bool {
-        self.up(button)
-            && self.previous.down(button)
+        self.up(button) && self.previous.down(button)
     }
     pub fn changed(&self, button: Buttons) -> bool {
         self.down(button) != self.previous.down(button)
