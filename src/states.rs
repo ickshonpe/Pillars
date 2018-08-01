@@ -299,7 +299,17 @@ impl GameState for Holding {
     }
 
     fn draw(&self, ctx: &graphics::GraphicsContext) {
-
+        let alpha = (self.holding_timer.elapsed_as_fraction() as f32 * 0.5) + 0.5;
+        render::clear();
+        render::draw_game(
+            Some(&self.game_data.board),
+            None, 
+            Some((self.game_data.next_column, alpha)),
+            self.game_data.score,
+            self.high_scores.value(),
+            &ctx        
+        );
+        ctx.window.gl_swap_window();
     }
 }
 
