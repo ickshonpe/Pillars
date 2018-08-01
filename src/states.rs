@@ -6,6 +6,9 @@ use input::InputState;
 use point2::P2;
 use timer::Timer;
 use gl_rendering;
+use render;
+use gl;
+use gl_util;
 
 #[derive(Copy, Clone, Debug)]
 pub struct HighScore {
@@ -73,8 +76,7 @@ pub struct Landed {
 pub struct Holding {
     high_scores: HighScore,
     game_data: GameData,
-    time_left: f64,
-    total_time: f64,
+    holding_timer: Timer    
 }
 pub struct Fading {
     high_scores: HighScore,
@@ -143,9 +145,7 @@ impl GameState for TitleScreen {
                 graphics::WHITE,
             );
         }
-        unsafe {
-            gl::Clear(gl::COLOR_BUFFER_BIT);
-        }
+        render::clear();
         gl_util::draw_textured_colored_quads(
             &charset_vertices,
             &ctx.shader_program,
@@ -207,77 +207,16 @@ impl GameState for Playing {
         }
     }
 
-    fn draw(&self, ctx: &graphics::GraphicsContext) {
-        let mut board_vertices = Vec::new();
-        let next_column = self.game_data.next_column;
-        gl_rendering::draw_column(
-            &mut board_vertices,
-            next_column,
-            ctx.target,
-            ctx.cell_size,
-            ctx.cell_padding,
-            0.5,
-        );
-        gl_rendering::draw_board(
-            &mut board_vertices,
-            &self.game_data.board,
+    fn draw(&self, ctx: &graphics::GraphicsContext) {        
+        render::clear();
+        render::draw_game(
+            Some(&self.game_data.board),
             Some(self.game_data.current_column),
-            ctx.target,
-            ctx.cell_size,
-            ctx.cell_padding,
+            Some(self.game_data.next_column),
+            self.game_data.score,
+            self.high_scores.value(),
+            &ctx        
         );
-
-         let display_strings = gl_rendering::get_scores_display_strings(
-                    self.game_data.score,
-                    self.high_scores.value(),
-                    ctx.window_rect,
-                    ctx.char_size,
-                );
-
-                let mut charset_vertices = Vec::new();
-                for message in &display_strings {
-                    ctx.charset.push_text_vertices(
-                        &mut charset_vertices,
-                        &message.0,
-                        message.1,
-                        ctx.char_size,
-                        graphics::WHITE,
-                    );
-                }
-
-
-         unsafe {
-             use gl;
-             use gl_util;
-                    gl::Clear(gl::COLOR_BUFFER_BIT);
-
-                    // draw all pillars
-                    gl_util::draw_textured_colored_quads(
-                        &board_vertices,
-                        &ctx.shader_program,
-                        ctx.pillar_texture.id(),
-                        ctx.vertex_buffer,
-                        ctx.vertex_attributes_array,
-                    );
-
-                    gl_util::draw_textured_colored_quads(
-                        &ctx.border_vertices,
-                        &ctx.shader_program,
-                        ctx.block_texture.id(),
-                        ctx.vertex_buffer,
-                        ctx.vertex_attributes_array,
-                    );
-
-                    gl_util::draw_textured_colored_quads(
-                        &charset_vertices,
-                        &ctx.shader_program,
-                        ctx.charset_texture.id(),
-                        ctx.vertex_buffer,
-                        ctx.vertex_attributes_array,
-                    );
-                }
-
-
         ctx.window.gl_swap_window();
     }
 }
@@ -292,7 +231,25 @@ impl GameState for Paused {
     }
 
     fn draw(&self, ctx: &graphics::GraphicsContext) {
+        render::clear();
+        let mut charset_vertices = Vec::new();
+        ctx.charset.push_text_vertices(
+                    &mut charset_vertices,
+                    &"paused".to_string().into_bytes(),
+                    [ctx.window_rect.right() * 0.5 - 3. * ctx.char_size[0], ctx.window_rect.top() * 0.5],
+                    ctx.char_size,
+                    graphics::WHITE,
+                );
+                 gl_util::draw_textured_colored_quads(
+                    &charset_vertices,
+                    &ctx.shader_program,
+                    ctx.charset_texture.id(),
+                    ctx.vertex_buffer,
+                    ctx.vertex_attributes_array,
+                );
+            
 
+        ctx.window.gl_swap_window();
     }
 }
 
@@ -325,19 +282,76 @@ impl GameState for GameOver {
 }
 
 impl GameState for Holding {
-    fn update(self: Box<Self>, time_delta: f64, input_state: &InputState) -> Box<GameState> {
-        self
+    fn update(mut self: Box<Self>, time_delta: f64, input_state: &InputState) -> Box<GameState> {
+        use board_analysis;
+        use columns;
+        if self.holding_timer.update_and_check(time_delta) {
+                self.game_data.current_column = self.game_data.next_column;
+                self.game_data.next_column = columns::Column::new(self.game_data.column_spawn_point);
+                self.game_data.drop_cool_down = -self.game_data.drop_speed * 0.5;
+                self.game_data.game_over = board_analysis::check_for_collision(
+                    &self.game_data.board,
+                    &self.game_data.current_column,
+                );
+                let next_state = Playing { high_scores: self.high_scores, game_data: self.game_data };
+                Box::new(next_state)
+        } else {
+            self
+        }
     }
 
-    fn draw(&self, ctx: &graphics::GraphicsContext) {}
+    fn draw(&self, ctx: &graphics::GraphicsContext) {
+
+    }
 }
 
 impl GameState for Landed {
-    fn update(self: Box<Self>, time_delta: f64, input_state: &InputState) -> Box<GameState> {
+    fn update(mut self: Box<Self>, time_delta: f64, input_state: &InputState) -> Box<GameState> {
+        use board_analysis;
+        use gravity;
+        if !gravity::drop_jewels(&mut self.game_data.board) {
+            self.game_data.matches = board_analysis::scan_for_matches(
+                &self.game_data.board,
+                self.game_data.min_gem_line_length,
+            );
+            if self.game_data.matches.is_empty() {
+                
+                self.game_data.score += self.game_data.score_accumulator;
+                if 0 < self.game_data.score_accumulator {
+                    self.game_data.last_accumulated_score = self.game_data.score_accumulator;
+                }
+                self.game_data.score_accumulator = 0;
+                let next_state = Holding {
+                        high_scores: self.high_scores,
+                        game_data: self.game_data,                         
+                        holding_timer: Timer::new(0.25)
+                };
+                return Box::new(next_state);
+            } else {                
+                let next_state = 
+                    Matching { 
+                        high_scores: self.high_scores,
+                        game_data: self.game_data,                         
+                        time_left: 0.1
+                    };
+                return Box::new(next_state);
+            }
+        }
         self
     }
 
-    fn draw(&self, ctx: &graphics::GraphicsContext) {}
+    fn draw(&self, ctx: &graphics::GraphicsContext) {
+        render::clear();
+        render::draw_game(
+            Some(&self.game_data.board),
+            None, //Some(self.game_data.current_column),
+            Some(self.game_data.next_column),
+            self.game_data.score,
+            self.high_scores.value(),
+            &ctx        
+        );
+        ctx.window.gl_swap_window();
+    }
 }
 
 impl GameState for Grounded {
@@ -410,7 +424,19 @@ impl GameState for Grounded {
         self
     }
 
-    fn draw(&self, ctx: &graphics::GraphicsContext) {}
+    fn draw(&self, ctx: &graphics::GraphicsContext) {
+        render::clear();
+        render::draw_game(
+            Some(&self.game_data.board),
+            Some(self.game_data.current_column),
+            Some(self.game_data.next_column),
+            self.game_data.score,
+            self.high_scores.value(),
+            &ctx        
+        );
+        ctx.window.gl_swap_window();
+
+    }
 }
 
 impl GameState for Fading {

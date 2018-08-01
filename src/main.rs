@@ -31,6 +31,7 @@ mod states;
 mod textures;
 mod timer;
 mod game_loop;
+mod render;
 
 use board::*;
 use gl::types::*;
