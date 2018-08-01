@@ -143,4 +143,10 @@ pub struct GraphicsContext {
     pub vertex_buffer: GLuint,
     pub vertex_attributes_array: GLuint,
     pub window: ::sdl2::video::Window,
+    pub border_vertices: Vec<TCVertex2>,
+    pub target: Vertex2,
+    pub cell_size: Vertex2,
+    pub cell_padding: Vertex2,
+    pub pillar_texture: textures::Texture,
+    pub block_texture: textures::Texture
 }

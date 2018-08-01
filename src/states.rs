@@ -5,6 +5,7 @@ use input::Buttons;
 use input::InputState;
 use point2::P2;
 use timer::Timer;
+use gl_rendering;
 
 #[derive(Copy, Clone, Debug)]
 pub struct HighScore {
@@ -206,7 +207,79 @@ impl GameState for Playing {
         }
     }
 
-    fn draw(&self, ctx: &graphics::GraphicsContext) {}
+    fn draw(&self, ctx: &graphics::GraphicsContext) {
+        let mut board_vertices = Vec::new();
+        let next_column = self.game_data.next_column;
+        gl_rendering::draw_column(
+            &mut board_vertices,
+            next_column,
+            ctx.target,
+            ctx.cell_size,
+            ctx.cell_padding,
+            0.5,
+        );
+        gl_rendering::draw_board(
+            &mut board_vertices,
+            &self.game_data.board,
+            Some(self.game_data.current_column),
+            ctx.target,
+            ctx.cell_size,
+            ctx.cell_padding,
+        );
+
+         let display_strings = gl_rendering::get_scores_display_strings(
+                    self.game_data.score,
+                    self.high_scores.value(),
+                    ctx.window_rect,
+                    ctx.char_size,
+                );
+
+                let mut charset_vertices = Vec::new();
+                for message in &display_strings {
+                    ctx.charset.push_text_vertices(
+                        &mut charset_vertices,
+                        &message.0,
+                        message.1,
+                        ctx.char_size,
+                        graphics::WHITE,
+                    );
+                }
+
+
+         unsafe {
+             use gl;
+             use gl_util;
+                    gl::Clear(gl::COLOR_BUFFER_BIT);
+
+                    // draw all pillars
+                    gl_util::draw_textured_colored_quads(
+                        &board_vertices,
+                        &ctx.shader_program,
+                        ctx.pillar_texture.id(),
+                        ctx.vertex_buffer,
+                        ctx.vertex_attributes_array,
+                    );
+
+                    gl_util::draw_textured_colored_quads(
+                        &ctx.border_vertices,
+                        &ctx.shader_program,
+                        ctx.block_texture.id(),
+                        ctx.vertex_buffer,
+                        ctx.vertex_attributes_array,
+                    );
+
+                    gl_util::draw_textured_colored_quads(
+                        &charset_vertices,
+                        &ctx.shader_program,
+                        ctx.charset_texture.id(),
+                        ctx.vertex_buffer,
+                        ctx.vertex_attributes_array,
+                    );
+                }
+
+
+        ctx.window.gl_swap_window();
+    }
 }
 
 impl GameState for Paused {
@@ -218,7 +291,9 @@ impl GameState for Paused {
         }
     }
 
-    fn draw(&self, ctx: &graphics::GraphicsContext) {}
+    fn draw(&self, ctx: &graphics::GraphicsContext) {
+
+    }
 }
 
 impl GameState for GameOver {

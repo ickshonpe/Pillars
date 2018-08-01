@@ -22,6 +22,7 @@ use charset;
 use time;
 use events;
 use game_state::GameState;
+use std::collections::HashMap;
 
 pub fn main() {
     let mut last_score = 0;
@@ -30,7 +31,7 @@ pub fn main() {
     let window_size = [352, 520];
     let cell_size = [32., 32.];
     let cell_padding = [0., 0.];
-    let key_bindings: std::collections::HashMap<sdl2::keyboard::Keycode, input::Buttons> = hashmap! {
+    let key_bindings: HashMap<sdl2::keyboard::Keycode, input::Buttons> = hashmap! {
         sdl2::keyboard::Keycode::Left => input::Buttons::Left,
         sdl2::keyboard::Keycode::Right => input::Buttons::Right,
         sdl2::keyboard::Keycode::Down => input::Buttons::Down,
@@ -40,10 +41,7 @@ pub fn main() {
         sdl2::keyboard::Keycode::Escape => input::Buttons::Quit
     };
 
-    let controller_bindings: std::collections::HashMap<
-        sdl2::controller::Button,
-        input::Buttons,
-    > = hashmap! {
+    let controller_bindings: HashMap<sdl2::controller::Button, input::Buttons> = hashmap! {
         sdl2::controller::Button::B => input::Buttons::CycleUp,
         sdl2::controller::Button::A => input::Buttons::CycleDown,
         sdl2::controller::Button::DPadLeft => input::Buttons::Left,
@@ -246,7 +244,13 @@ pub fn main() {
         charset_texture,
         vertex_buffer,
         vertex_attributes_array,
-        window
+        window,
+        border_vertices,
+        target,
+        cell_size,
+        cell_padding,
+        pillar_texture,
+        block_texture
     };
 
     'game_loop: loop {
