@@ -9,20 +9,20 @@ use columns::Column;
 pub fn draw_game(
     board: Option<&Board>,
     falling_column: Option<Column>,
-    next_column: Option<Column>,
+    next_column: Option<(Column, f32)>,
     current_score: u64,
     high_score: u64,
     ctx: &graphics::GraphicsContext
 ) {
     let mut board_vertices = Vec::new();
-    if let Some(next_column) = next_column {
+    if let Some((next_column, alpha)) = next_column {
         gl_rendering::draw_column(
             &mut board_vertices,
             next_column,
             ctx.target,
             ctx.cell_size,
             ctx.cell_padding,
-            0.5,
+            alpha
         );
     }
     if let Some(board) = board {

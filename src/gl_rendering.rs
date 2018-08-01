@@ -219,3 +219,4 @@ pub fn draw_board_all_fading(
         }
     }
 }
+

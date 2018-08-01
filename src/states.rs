@@ -212,7 +212,7 @@ impl GameState for Playing {
         render::draw_game(
             Some(&self.game_data.board),
             Some(self.game_data.current_column),
-            Some(self.game_data.next_column),
+            Some((self.game_data.next_column, 0.5)),
             self.game_data.score,
             self.high_scores.value(),
             &ctx        
@@ -268,11 +268,9 @@ impl GameState for GameOver {
         }
 
         if self.time_left < 0. || input_state.just_pressed(Buttons::Start) {
-            // Box::new(TitleScreen {
-            //     high_scores: self.high_scores,
-
-            // })
-            self
+            Box::new(TitleScreen {
+                high_scores: self.high_scores,
+            })            
         } else {
             self
         }
@@ -345,7 +343,7 @@ impl GameState for Landed {
         render::draw_game(
             Some(&self.game_data.board),
             None, //Some(self.game_data.current_column),
-            Some(self.game_data.next_column),
+            Some((self.game_data.next_column, 0.5)),
             self.game_data.score,
             self.high_scores.value(),
             &ctx        
@@ -429,7 +427,7 @@ impl GameState for Grounded {
         render::draw_game(
             Some(&self.game_data.board),
             Some(self.game_data.current_column),
-            Some(self.game_data.next_column),
+            Some((self.game_data.next_column, 0.5)),
             self.game_data.score,
             self.high_scores.value(),
             &ctx        
