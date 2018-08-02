@@ -4,15 +4,16 @@ pub struct Timer {
     time_limit: f64,
 }
 
+
 impl Timer {
-    pub fn new(time_limit: f64) -> Timer {
+    pub fn new(time_limit: f64) -> Timer {        
         Timer {
             time_left: time_limit,
             time_limit: time_limit,
         }
     }
 
-    pub fn update_and_check(&mut self, time_delta: f64) -> bool {
+    pub fn update_and_check(&mut self, time_delta: f64) -> bool {        
         self.time_left -= time_delta;
         self.time_left < 0.
     }

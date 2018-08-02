@@ -4,6 +4,7 @@ use columns::*;
 use point2::*;
 use std::collections::HashSet;
 
+
 pub fn scan_for_matches(board: &Board, min_gem_line_length: usize) -> HashSet<P2> {
     if min_gem_line_length < 2 {
         panic!("line length {} is too short", min_gem_line_length);

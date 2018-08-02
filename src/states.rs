@@ -83,8 +83,7 @@ pub struct Holding {
 pub struct Fading {
     high_scores: HighScore,
     game_data: GameData,
-    time_left: f64,
-    total_time: f64,
+    fading_time: Timer
 }
 pub struct Matching {
     high_scores: HighScore,
@@ -464,7 +463,7 @@ impl GameState for Grounded {
 
 impl GameState for Fading {
     fn update(mut self: Box<Self>, time_delta: f64, input_state: &InputState) -> Box<GameState> {
-        if self.time_left < 0.0 {
+        if self.fading_time.update_and_check(time_delta) {
             let matches = self.game_data.matches.clone();
             for p in matches {
                 self.game_data.score_accumulator += self.game_data.level + 1;
@@ -476,8 +475,7 @@ impl GameState for Fading {
                 game_data: self.game_data,
             };
             Box::new(next_state)
-        } else {
-            self.time_left -= time_delta;
+        } else {            
             self
         }
     }
@@ -485,7 +483,7 @@ impl GameState for Fading {
     fn draw(&self, ctx: &graphics::GraphicsContext) {
         render::clear();
         render::draw_game(
-            BoardDrawMode::Fading(&self.game_data.board, &self.game_data.matches, 0.5),
+            BoardDrawMode::Fading(&self.game_data.board, &self.game_data.matches, 1. - self.fading_time.elapsed_as_fraction() as f32),
             None, 
             Some((self.game_data.next_column, 0.5)), 
             self.game_data.score, 
@@ -502,8 +500,7 @@ impl GameState for Matching {
             Box::new(Fading {
                 high_scores: self.high_scores,
                 game_data: self.game_data,
-                time_left: 0.3,
-                total_time: 0.3,
+                fading_time: Timer::new(0.3)
             })
         } else {
             self.time_left -= time_delta;
