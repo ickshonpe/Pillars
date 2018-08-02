@@ -5,9 +5,19 @@ use graphics;
 use board::Board;
 use graphics::Vertex2;
 use columns::Column;
+use std::collections::HashSet;
+use point2::P2;
+
+pub enum BoardDrawMode<'a> {
+    Normal(&'a Board),
+    Highlight(&'a Board, &'a HashSet<P2>),
+    Fading(&'a Board, &'a HashSet<P2>, f32),
+    GameOver(&'a Board, &'a [(P2, f32)]),
+    None
+}
 
 pub fn draw_game(
-    board: Option<&Board>,
+    board: BoardDrawMode,
     falling_column: Option<Column>,
     next_column: Option<(Column, f32)>,
     current_score: u64,
@@ -15,6 +25,7 @@ pub fn draw_game(
     ctx: &graphics::GraphicsContext
 ) {
     let mut board_vertices = Vec::new();
+    
     if let Some((next_column, alpha)) = next_column {
         gl_rendering::draw_column(
             &mut board_vertices,
@@ -25,7 +36,19 @@ pub fn draw_game(
             alpha
         );
     }
-    if let Some(board) = board {
+
+    if let BoardDrawMode::GameOver(board, fading) = board {
+        gl_rendering::draw_board_all_fading(
+            &mut board_vertices, 
+            board, 
+            fading, 
+            ctx.target,
+            ctx.cell_size, 
+            ctx.cell_padding
+        );
+    }
+
+    if let BoardDrawMode::Normal(board) = board {
         gl_rendering::draw_board(
             &mut board_vertices,
             board,
@@ -34,7 +57,31 @@ pub fn draw_game(
             ctx.cell_size,
             ctx.cell_padding,
         );
-    }
+    } 
+    if let BoardDrawMode::Highlight(board, matches) = board {
+        gl_rendering::draw_board_highlight_matches(
+            &mut board_vertices,
+            board,
+            matches,
+            ctx.target,
+            ctx.cell_size,
+            ctx.cell_padding,
+        );
+    } 
+    if let BoardDrawMode::Fading(board, matches, alpha) = board {
+        gl_rendering::draw_board_fade_matches(            
+            &mut board_vertices,
+            board,
+            matches,
+            alpha,
+            ctx.target,
+            ctx.cell_size,
+            ctx.cell_padding,
+        );
+    } 
+    
+
+
     let display_strings = 
         gl_rendering::get_scores_display_strings(
             current_score,

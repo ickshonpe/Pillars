@@ -9,6 +9,7 @@ use gl_rendering;
 use render;
 use gl;
 use gl_util;
+use render::BoardDrawMode;
 
 #[derive(Copy, Clone, Debug)]
 pub struct HighScore {
@@ -58,6 +59,7 @@ pub struct Paused {
 
 pub struct GameOver {
     high_scores: HighScore,
+    game_data: GameData,
     time_left: f64,
     fade_time: f64,
     fading: Vec<(P2, f32)>,
@@ -189,6 +191,7 @@ impl GameState for Playing {
 
             let next_state = GameOver {
                 high_scores: self.high_scores,
+                game_data: self.game_data,                
                 time_left: 10.,
                 fade_time: 0.2,
                 fading: Vec::new(),
@@ -210,7 +213,7 @@ impl GameState for Playing {
     fn draw(&self, ctx: &graphics::GraphicsContext) {        
         render::clear();
         render::draw_game(
-            Some(&self.game_data.board),
+            BoardDrawMode::Normal(&self.game_data.board),
             Some(self.game_data.current_column),
             Some((self.game_data.next_column, 0.5)),
             self.game_data.score,
@@ -276,7 +279,18 @@ impl GameState for GameOver {
         }
     }
 
-    fn draw(&self, ctx: &graphics::GraphicsContext) {}
+    fn draw(&self, ctx: &graphics::GraphicsContext) {
+        render::clear();
+        render::draw_game(
+            BoardDrawMode::GameOver(&self.game_data.board, &self.fading),
+            None,
+            None,
+            self.game_data.score,
+            self.high_scores.value(), 
+            ctx
+        );
+        ctx.window.gl_swap_window();
+    }
 }
 
 impl GameState for Holding {
@@ -302,7 +316,7 @@ impl GameState for Holding {
         let alpha = (self.holding_timer.elapsed_as_fraction() as f32 * 0.5) + 0.5;
         render::clear();
         render::draw_game(
-            Some(&self.game_data.board),
+            BoardDrawMode::Normal(&self.game_data.board),
             None, 
             Some((self.game_data.next_column, alpha)),
             self.game_data.score,
@@ -351,8 +365,8 @@ impl GameState for Landed {
     fn draw(&self, ctx: &graphics::GraphicsContext) {
         render::clear();
         render::draw_game(
-            Some(&self.game_data.board),
-            None, //Some(self.game_data.current_column),
+            BoardDrawMode::Normal(&self.game_data.board),
+            None,
             Some((self.game_data.next_column, 0.5)),
             self.game_data.score,
             self.high_scores.value(),
@@ -394,6 +408,7 @@ impl GameState for Grounded {
             };
             let next_state = GameOver {
                 high_scores: self.high_scores,
+                game_data: self.game_data,                
                 time_left: 10.,
                 fade_time: 0.2,
                 fading: Vec::new(),
@@ -435,7 +450,7 @@ impl GameState for Grounded {
     fn draw(&self, ctx: &graphics::GraphicsContext) {
         render::clear();
         render::draw_game(
-            Some(&self.game_data.board),
+            BoardDrawMode::Normal(&self.game_data.board),
             Some(self.game_data.current_column),
             Some((self.game_data.next_column, 0.5)),
             self.game_data.score,
@@ -467,7 +482,17 @@ impl GameState for Fading {
         }
     }
 
-    fn draw(&self, ctx: &graphics::GraphicsContext) {}
+    fn draw(&self, ctx: &graphics::GraphicsContext) {
+        render::clear();
+        render::draw_game(
+            BoardDrawMode::Fading(&self.game_data.board, &self.game_data.matches, 0.5),
+            None, 
+            Some((self.game_data.next_column, 0.5)), 
+            self.game_data.score, 
+            self.high_scores.value(), 
+            ctx);
+        ctx.window.gl_swap_window();
+    }
 }
 
 impl GameState for Matching {
@@ -477,8 +502,8 @@ impl GameState for Matching {
             Box::new(Fading {
                 high_scores: self.high_scores,
                 game_data: self.game_data,
-                time_left: matching_time,
-                total_time: matching_time,
+                time_left: 0.3,
+                total_time: 0.3,
             })
         } else {
             self.time_left -= time_delta;
@@ -486,5 +511,17 @@ impl GameState for Matching {
         }
     }
 
-    fn draw(&self, ctx: &graphics::GraphicsContext) {}
+    fn draw(&self, ctx: &graphics::GraphicsContext) {
+        render::clear();
+        render::draw_game(
+            BoardDrawMode::Highlight(&self.game_data.board, &self.game_data.matches),
+            None,
+            Some((self.game_data.next_column, 0.5)),
+            self.game_data.score,
+            self.high_scores.value(),
+            &ctx        
+        );
+        ctx.window.gl_swap_window();
+
+    }
 }
