@@ -1,35 +1,36 @@
 use board::Board;
 use columns::Jewel;
 use graphics::Color;
-use graphics::TCVertex2;
-use graphics::Vertex2;
+use graphics::V2T2C4;
+use graphics::Vector2;
 use point2::Size2;
+use rectangle::Rectangle;
 
 pub fn push_quad_vertices(
-    vertex_buffer: &mut Vec<TCVertex2>,
-    position: Vertex2,
-    size: Vertex2,
+    vertex_buffer: &mut Vec<V2T2C4>,
+    position: Vector2,
+    size: Vector2,
     color: Color,
 ) {
     let min_x = position[0];
     let min_y = position[1];
     let max_x = position[0] + size[0];
     let max_y = position[1] + size[1];
-    vertex_buffer.push(TCVertex2([min_x, min_y], [0.0, 0.0], color));
-    vertex_buffer.push(TCVertex2([max_x, max_y], [1.0, 1.0], color));
-    vertex_buffer.push(TCVertex2([min_x, max_y], [0.0, 1.0], color));
-    vertex_buffer.push(TCVertex2([min_x, min_y], [0.0, 0.0], color));
-    vertex_buffer.push(TCVertex2([max_x, max_y], [1.0, 1.0], color));
-    vertex_buffer.push(TCVertex2([max_x, min_y], [1.0, 0.0], color));
+    vertex_buffer.push(V2T2C4([min_x, min_y], [0.0, 0.0], color));
+    vertex_buffer.push(V2T2C4([max_x, max_y], [1.0, 1.0], color));
+    vertex_buffer.push(V2T2C4([min_x, max_y], [0.0, 1.0], color));
+    vertex_buffer.push(V2T2C4([min_x, min_y], [0.0, 0.0], color));
+    vertex_buffer.push(V2T2C4([max_x, max_y], [1.0, 1.0], color));
+    vertex_buffer.push(V2T2C4([max_x, min_y], [1.0, 0.0], color));
 }
 
 pub fn draw_board(
-    mut vertex_buffer: &mut Vec<TCVertex2>,
+    mut vertex_buffer: &mut Vec<V2T2C4>,
     board: &Board,
     column: Option<::columns::Column>,
-    target: Vertex2,
-    tile_size: Vertex2,
-    tile_padding: Vertex2,
+    target: Vector2,
+    tile_size: Vector2,
+    tile_padding: Vector2,
 ) {
     for x in 0..board.width() {
         for y in 0..board.height() {
@@ -64,12 +65,12 @@ use graphics;
 use point2::P2;
 use std;
 pub fn draw_board_highlight_matches(
-    vertex_buffer: &mut Vec<TCVertex2>,
+    vertex_buffer: &mut Vec<V2T2C4>,
     board: &Board,
     matches: &std::collections::HashSet<P2>,
-    target: Vertex2,
-    tile_size: Vertex2,
-    tile_padding: Vertex2,
+    target: Vector2,
+    tile_size: Vector2,
+    tile_padding: Vector2,
 ) {
     for x in 0..board.width() {
         for y in 0..board.height() {
@@ -91,13 +92,13 @@ pub fn draw_board_highlight_matches(
 }
 
 pub fn draw_board_fade_matches(
-    vertex_buffer: &mut Vec<TCVertex2>,
+    vertex_buffer: &mut Vec<V2T2C4>,
     board: &Board,
     matches: &std::collections::HashSet<P2>,
     alpha: f32,
-    target: Vertex2,
-    tile_size: Vertex2,
-    tile_padding: Vertex2,
+    target: Vector2,
+    tile_size: Vector2,
+    tile_padding: Vector2,
 ) {
     for x in 0..board.width() {
         for y in 0..board.height() {
@@ -120,11 +121,11 @@ pub fn draw_board_fade_matches(
 }
 
 pub fn draw_column(
-    mut vertex_buffer: &mut Vec<TCVertex2>,
+    vertex_buffer: &mut Vec<V2T2C4>,
     column: ::columns::Column,
-    target: Vertex2,
-    tile_size: Vertex2,
-    tile_padding: Vertex2,
+    target: Vector2,
+    tile_size: Vector2,
+    _tile_padding: Vector2,
     alpha: f32,
 ) {
     let mut p = column.position;
@@ -139,19 +140,17 @@ pub fn draw_column(
     }
 }
 
-fn draw_jewel(vertex_buffer: &mut Vec<TCVertex2>, target: Vertex2, size: Vertex2, jewel: Jewel) {
+fn draw_jewel(vertex_buffer: &mut Vec<V2T2C4>, target: Vector2, size: Vector2, jewel: Jewel) {
     let color = jewel.color_gl();
     push_quad_vertices(vertex_buffer, target, size, color)
 }
 
-use charset::Charset;
-use gl_util::draw_textured_colored_quads;
 pub fn get_scores_display_strings(
     score: u64,
     high_score: u64,
-    window_rect: graphics::Rectangle,
-    char_size: Vertex2,
-) -> Vec<(Vec<u8>, Vertex2)> {
+    window_rect: Rectangle,
+    char_size: Vector2,
+) -> Vec<(Vec<u8>, Vector2)> {
     vec![
         (
             format!("{:06}", high_score).into_bytes(),
@@ -171,12 +170,12 @@ pub fn get_scores_display_strings(
 }
 
 pub fn draw_board_all_fading(
-    vertex_buffer: &mut Vec<TCVertex2>,
+    vertex_buffer: &mut Vec<V2T2C4>,
     board: &Board,
     fading: &[(P2, f32)],
-    target: Vertex2,
-    tile_size: Vertex2,
-    tile_padding: Vertex2,
+    target: Vector2,
+    tile_size: Vector2,
+    tile_padding: Vector2,
 ) {
     for x in 0..board.width() {
         for y in 0..board.height() {

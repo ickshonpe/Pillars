@@ -5,7 +5,7 @@ use std::path::Path;
 const HIGH_SCORE_FILE: &str = ".high_scores";
 
 /// attempt to load the high score from a file
-/// failure returns a high score of 0.
+/// fails silently and returns a high score of 0.
 pub fn read_high_score() -> u64 {
     let path = Path::new(HIGH_SCORE_FILE);
     if let Ok(mut file) = File::open(path) {
@@ -19,10 +19,10 @@ pub fn read_high_score() -> u64 {
 }
 
 /// attempt to save current high score to a file
-/// fails silently - doesn't matter that much
+/// fails silently without saving
 pub fn write_high_score(high_score: u64) {
     let path = Path::new(HIGH_SCORE_FILE);
-    if let Ok(mut file) = File::create(HIGH_SCORE_FILE) {
-        file.write_all(&format!("{}", high_score).into_bytes());
+    if let Ok(mut file) = File::create(path) {
+        let _ = file.write_all(&format!("{}", high_score).into_bytes());
     }
 }

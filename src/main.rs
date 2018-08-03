@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-#![allow(unused_imports)]
 extern crate image;
 extern crate rand;
 extern crate sdl2;
@@ -13,7 +11,6 @@ mod board_partitioning;
 mod charset;
 mod columns;
 mod events;
-mod game;
 mod game_data;
 mod game_state;
 mod game_update;
@@ -28,15 +25,15 @@ mod point2;
 mod random;
 mod shaders;
 mod states;
-mod textures;
+mod texture;
 mod timer;
 mod render;
+mod rectangle;
 
-use board::*;
+use rectangle::Rectangle;
 use gl::types::*;
-use graphics::{Color, Rectangle, TCVertex2, Vertex2};
+use graphics::{V2T2C4, Vector2};
 use point2::*;
-use sdl2::controller::Button;
 use std::collections::HashMap;
 use game_state::GameState;
 
@@ -54,8 +51,7 @@ pub enum ProgramState {
 }
 
 fn main() {
-    let mut last_score = 0;
-    let mut high_score = high_score_file::read_high_score();
+    let high_score = high_score_file::read_high_score();
 
     let window_size = [352, 520];
     let cell_size = [32., 32.];
@@ -94,15 +90,15 @@ fn main() {
         .build()
         .unwrap();
 
-    let gl_context = window.gl_create_context().unwrap();
+    let _gl_context = window.gl_create_context().unwrap();
     gl::load_with(|s| video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void);
 
     let pillar_bytes = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/pillar.png"));
-    let pillar_texture = textures::Texture::from_png(std::io::Cursor::new(&pillar_bytes[..]));
+    let pillar_texture = texture::Texture::from_png(std::io::Cursor::new(&pillar_bytes[..]));
     let charset_bytes = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/charset.png"));
-    let charset_texture = textures::Texture::from_png(std::io::Cursor::new(&charset_bytes[..]));
+    let charset_texture = texture::Texture::from_png(std::io::Cursor::new(&charset_bytes[..]));
     let block_bytes = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/block.png"));
-    let block_texture = textures::Texture::from_png(std::io::Cursor::new(&block_bytes[..]));
+    let block_texture = texture::Texture::from_png(std::io::Cursor::new(&block_bytes[..]));
 
     let controller_subsystem = sdl_context.game_controller().unwrap();
     let mut controllers = {
@@ -124,9 +120,8 @@ fn main() {
     event_pump.enable_event(sdl2::event::EventType::ControllerButtonDown);
     event_pump.enable_event(sdl2::event::EventType::ControllerButtonUp);
 
-    let mut game_data = game_data::GameData::default();
+    let game_data = game_data::GameData::default();
     let mut input_state = input::InputState::default();
-    let mut ticks = 0;
 
     unsafe {
         gl::Viewport(0, 0, 600, 600);
@@ -136,7 +131,7 @@ fn main() {
         gl::BlendFuncSeparate(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA, gl::ONE, gl::ZERO);
     }
 
-    let mut orthogonal_projection_matrix =
+    let orthogonal_projection_matrix =
         graphics::calculate_orthogonal_projection_matrix([600., 600.], [0., 0.]);
 
     let shaders = [
@@ -158,7 +153,7 @@ fn main() {
         );
     }
 
-    let mut vertices = Vec::<TCVertex2>::new();
+    let mut vertices = Vec::<V2T2C4>::new();
     gl_rendering::push_quad_vertices(&mut vertices, [200., 200.], [128., 128.], graphics::YELLOW);
 
     let mut vertex_buffer: GLuint = 0;
@@ -169,7 +164,7 @@ fn main() {
         gl::BindBuffer(gl::ARRAY_BUFFER, vertex_buffer);
         gl::BufferData(
             gl::ARRAY_BUFFER,
-            (vertices.len() * std::mem::size_of::<TCVertex2>()) as GLsizeiptr,
+            (vertices.len() * std::mem::size_of::<V2T2C4>()) as GLsizeiptr,
             vertices.as_ptr() as *const GLvoid,
             gl::STATIC_DRAW,
         );
@@ -182,7 +177,7 @@ fn main() {
             2,
             gl::FLOAT,
             gl::FALSE,
-            std::mem::size_of::<TCVertex2>() as GLsizei,
+            std::mem::size_of::<V2T2C4>() as GLsizei,
             std::ptr::null(),
         );
         gl::EnableVertexAttribArray(1);
@@ -191,8 +186,8 @@ fn main() {
             2,
             gl::FLOAT,
             gl::FALSE,
-            std::mem::size_of::<TCVertex2>() as GLsizei,
-            std::mem::size_of::<Vertex2>() as *const GLvoid,
+            std::mem::size_of::<V2T2C4>() as GLsizei,
+            std::mem::size_of::<Vector2>() as *const GLvoid,
         );
         gl::EnableVertexAttribArray(2);
         gl::VertexAttribPointer(
@@ -200,8 +195,8 @@ fn main() {
             4,
             gl::FLOAT,
             gl::FALSE,
-            std::mem::size_of::<TCVertex2>() as GLsizei,
-            (std::mem::size_of::<Vertex2>() * 2) as *const GLvoid,
+            std::mem::size_of::<V2T2C4>() as GLsizei,
+            (std::mem::size_of::<Vector2>() * 2) as *const GLvoid,
         );
 
         gl::BindVertexArray(0);
@@ -209,9 +204,6 @@ fn main() {
     }
 
     let charset = charset::Charset::new();
-//    let mut board_vertices =
-//        Vec::with_capacity((game_data.board.width() * game_data.board.height() + 20) * 6);
-
     let target = [64., 64.];
 
     let border_cell_size = [
@@ -254,10 +246,6 @@ fn main() {
 
     let mut last_ns = time::precise_time_ns() - 5;
     let char_size = [16., 16.];
-    let top = (window_size[1] - 1) as f32;
-    let left = 0.;
-    let right = (window_size[0] - 1) as f32;
-    let bottom = 0.;
     let window_rect = Rectangle {
         position: [0., 0.],
         size: [(window_size[0] - 1) as f32, (window_size[1] - 1) as f32],

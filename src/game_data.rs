@@ -1,9 +1,6 @@
-use board::*;
-use board_analysis::*;
-use columns::*;
-use gravity;
-use input::InputState;
-use point2::*;
+use board::Board;
+use columns::Column;
+use point2::P2;
 use std::collections::HashSet;
 
 pub struct GameData {

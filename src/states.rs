@@ -7,7 +7,6 @@ use point2::P2;
 use timer::Timer;
 use gl_rendering;
 use render;
-use gl;
 use gl_util;
 use render::BoardDrawMode;
 
@@ -53,7 +52,6 @@ pub struct Playing {
     game_data: GameData,
 }
 pub struct Paused {
-    high_scores: HighScore,
     previous: Box<GameState>,
 }
 
@@ -102,7 +100,7 @@ impl TitleScreen {
 }
 
 impl GameState for TitleScreen {
-    fn update(mut self: Box<Self>, time_delta: f64, input_state: &InputState) -> Box<GameState> {
+    fn update(self: Box<Self>, _time_delta: f64, input_state: &InputState) -> Box<GameState> {
         if input_state.just_pressed(Buttons::Start) {
             let game_data = GameData::default();
             let next_state = Playing {
@@ -116,14 +114,12 @@ impl GameState for TitleScreen {
     }
 
     fn draw(&self, ctx: &graphics::GraphicsContext) {
-        use gl;
-        use gl_rendering;
         use gl_util;
         use graphics;
         let display_strings = {
             let mut temp = gl_rendering::get_scores_display_strings(
-                self.high_scores.last_score,
-                self.high_scores.high_score,
+                self.high_scores.last_score(),
+                self.high_scores.value(),
                 ctx.window_rect,
                 ctx.char_size,
             );
@@ -150,7 +146,7 @@ impl GameState for TitleScreen {
         gl_util::draw_textured_colored_quads(
             &charset_vertices,
             &ctx.shader_program,
-            ctx.charset_texture.id(),
+            &ctx.charset_texture,
             ctx.vertex_buffer,
             ctx.vertex_attributes_array,
         );
@@ -162,7 +158,6 @@ impl GameState for Playing {
     fn update(mut self: Box<Self>, time_delta: f64, input_state: &InputState) -> Box<GameState> {
         if input_state.just_pressed(Buttons::Start) {
             return Box::new(Paused {
-                high_scores: self.high_scores,
                 previous: self,
             });
         }
@@ -186,7 +181,6 @@ impl GameState for Playing {
                 thread_rng().shuffle(&mut temp);
                 temp
             };
-            //program_state = ProgramState::GameOver(10.0, 0.2, Vec::new(), gameover_pillars);
 
             let next_state = GameOver {
                 high_scores: self.high_scores,
@@ -198,7 +192,7 @@ impl GameState for Playing {
             };
             return Box::new(next_state);
         }
-        if ::game_update::update_game(&mut self.game_data, &input_state, time_delta) {
+        if game_update::update_game(&mut self.game_data, &input_state, time_delta) {
             let next_state = Grounded {
                 high_scores: self.high_scores,
                 game_data: self.game_data,
@@ -245,7 +239,7 @@ impl GameState for Paused {
                  gl_util::draw_textured_colored_quads(
                     &charset_vertices,
                     &ctx.shader_program,
-                    ctx.charset_texture.id(),
+                    &ctx.charset_texture,
                     ctx.vertex_buffer,
                     ctx.vertex_attributes_array,
                 );
@@ -293,7 +287,7 @@ impl GameState for GameOver {
 }
 
 impl GameState for Holding {
-    fn update(mut self: Box<Self>, time_delta: f64, input_state: &InputState) -> Box<GameState> {
+    fn update(mut self: Box<Self>, time_delta: f64, _input_state: &InputState) -> Box<GameState> {
         use board_analysis;
         use columns;
         if self.holding_timer.update_and_check(time_delta) {
@@ -327,7 +321,7 @@ impl GameState for Holding {
 }
 
 impl GameState for Landed {
-    fn update(mut self: Box<Self>, time_delta: f64, input_state: &InputState) -> Box<GameState> {
+    fn update(mut self: Box<Self>, _time_delta: f64, _input_state: &InputState) -> Box<GameState> {
         use board_analysis;
         use gravity;
         if !gravity::drop_jewels(&mut self.game_data.board) {
@@ -378,11 +372,8 @@ impl GameState for Landed {
 impl GameState for Grounded {
     fn update(mut self: Box<Self>, time_delta: f64, input_state: &InputState) -> Box<GameState> {
         if input_state.just_pressed(Buttons::Start) {
-            // program_state = ProgramState::Paused;
-            // continue 'game_loop;
             return Box::new(Paused {
-                high_scores: self.high_scores,
-                previous: self,
+                previous: self
             });
         }
 
@@ -416,8 +407,6 @@ impl GameState for Grounded {
             return Box::new(next_state);
         }
 
-        //game_update::update_game_grounded(&mut game_data, &input_state, time_delta);
-        //let game_board = &mut game_data.board;
         self.game_data.rotate_cool_down -= time_delta;
         if self.game_data.rotate_cool_down < 0.0 {
             if input_state.just_pressed(Buttons::CycleUp) {
@@ -462,7 +451,7 @@ impl GameState for Grounded {
 }
 
 impl GameState for Fading {
-    fn update(mut self: Box<Self>, time_delta: f64, input_state: &InputState) -> Box<GameState> {
+    fn update(mut self: Box<Self>, time_delta: f64, _input_state: &InputState) -> Box<GameState> {
         if self.fading_time.update_and_check(time_delta) {
             let matches = self.game_data.matches.clone();
             for p in matches {
@@ -494,9 +483,8 @@ impl GameState for Fading {
 }
 
 impl GameState for Matching {
-    fn update(mut self: Box<Self>, time_delta: f64, input_state: &InputState) -> Box<GameState> {
+    fn update(mut self: Box<Self>, time_delta: f64, _input_state: &InputState) -> Box<GameState> {
         if self.time_left < 0.0 {
-            let matching_time = self.game_data.matching_time;
             Box::new(Fading {
                 high_scores: self.high_scores,
                 game_data: self.game_data,

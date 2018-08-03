@@ -9,7 +9,7 @@ impl Timer {
     pub fn new(time_limit: f64) -> Timer {        
         Timer {
             time_left: time_limit,
-            time_limit: time_limit,
+            time_limit
         }
     }
 

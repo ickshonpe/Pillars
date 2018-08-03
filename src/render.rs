@@ -3,7 +3,6 @@ use gl_rendering;
 use gl_util;
 use graphics;
 use board::Board;
-use graphics::Vertex2;
 use columns::Column;
 use std::collections::HashSet;
 use point2::P2;
@@ -12,8 +11,7 @@ pub enum BoardDrawMode<'a> {
     Normal(&'a Board),
     Highlight(&'a Board, &'a HashSet<P2>),
     Fading(&'a Board, &'a HashSet<P2>, f32),
-    GameOver(&'a Board, &'a [(P2, f32)]),
-    None
+    GameOver(&'a Board, &'a [(P2, f32)])
 }
 
 pub fn draw_game(
@@ -100,35 +98,30 @@ pub fn draw_game(
             graphics::WHITE,
         );
     }
+    // draw all pillars
+    gl_util::draw_textured_colored_quads(
+        &board_vertices,
+        &ctx.shader_program,
+        &ctx.pillar_texture,
+        ctx.vertex_buffer,
+        ctx.vertex_attributes_array,
+    );
 
-    unsafe {
-            // draw all pillars
-            gl_util::draw_textured_colored_quads(
-                &board_vertices,
-                &ctx.shader_program,
-                ctx.pillar_texture.id(),
-                ctx.vertex_buffer,
-                ctx.vertex_attributes_array,
-            );
+    gl_util::draw_textured_colored_quads(
+        &ctx.border_vertices,
+        &ctx.shader_program,
+        &ctx.block_texture,
+        ctx.vertex_buffer,
+        ctx.vertex_attributes_array,
+    );
 
-            gl_util::draw_textured_colored_quads(
-                &ctx.border_vertices,
-                &ctx.shader_program,
-                ctx.block_texture.id(),
-                ctx.vertex_buffer,
-                ctx.vertex_attributes_array,
-            );
-
-            gl_util::draw_textured_colored_quads(
-                &charset_vertices,
-                &ctx.shader_program,
-                ctx.charset_texture.id(),
-                ctx.vertex_buffer,
-                ctx.vertex_attributes_array,
-            );
-
-    }
-
+    gl_util::draw_textured_colored_quads(
+        &charset_vertices,
+        &ctx.shader_program,
+        &ctx.charset_texture,
+        ctx.vertex_buffer,
+        ctx.vertex_attributes_array,
+    );
 }
 
 pub fn clear() {

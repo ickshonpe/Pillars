@@ -2,6 +2,7 @@ use gl;
 use gl::types::{GLchar, GLint, GLuint};
 use std;
 use std::ffi::{CStr, CString};
+use texture::Texture;
 
 pub struct Shader {
     id: GLuint,
@@ -79,20 +80,20 @@ pub fn link_program(shaders: &[Shader]) -> Result<ShaderProgram, String> {
             id: gl::CreateProgram(),
         };
         for shader in shaders {
-            gl::AttachShader(program.id, shader.id);
+            gl::AttachShader(program.id(), shader.id());
         }
-        gl::LinkProgram(program.id);
+        gl::LinkProgram(program.id());
         for shader in shaders {
-            gl::DetachShader(program.id, shader.id);
+            gl::DetachShader(program.id(), shader.id());
         }
         let mut success: GLint = 0;
-        gl::GetProgramiv(program.id, gl::LINK_STATUS, &mut success);
+        gl::GetProgramiv(program.id(), gl::LINK_STATUS, &mut success);
         if success != 0 {
             // 0 is failure
             Ok(program)
         } else {
             let mut len: GLint = 0;
-            gl::GetProgramiv(program.id, gl::INFO_LOG_LENGTH, &mut len);
+            gl::GetProgramiv(program.id(), gl::INFO_LOG_LENGTH, &mut len);
             let mut error_buffer = create_c_string_buffer(len as usize);
             gl::GetProgramInfoLog(
                 program.id,
@@ -133,21 +134,21 @@ impl ShaderProgram {
 
 use gl::types::*;
 use gl_util;
-use graphics::TCVertex2;
+use graphics::V2T2C4;
 pub fn draw_textured_colored_quads(
-    vertices: &[TCVertex2],
+    vertices: &[V2T2C4],
     shader_program: &gl_util::ShaderProgram,
-    texture: GLuint,
+    texture: &Texture,
     vertex_buffer: GLuint,
     vertex_attributes_array: GLuint,
 ) {
     gl_util::use_program(&shader_program);
     unsafe {
-        gl::BindTexture(gl::TEXTURE_2D, texture);
+        texture.bind();
         gl::BindBuffer(gl::ARRAY_BUFFER, vertex_buffer);
         gl::BufferData(
             gl::ARRAY_BUFFER,
-            (vertices.len() * std::mem::size_of::<TCVertex2>()) as GLsizeiptr,
+            (vertices.len() * std::mem::size_of::<V2T2C4>()) as GLsizeiptr,
             vertices.as_ptr() as *const GLvoid,
             gl::STATIC_DRAW,
         );
@@ -155,6 +156,7 @@ pub fn draw_textured_colored_quads(
         gl::DrawArrays(gl::TRIANGLES, 0, vertices.len() as GLint);
         gl::BindVertexArray(0);
         gl::BindBuffer(gl::ARRAY_BUFFER, 0);
+        texture.release();
         gl::UseProgram(0);
     }
 }

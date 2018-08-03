@@ -1,11 +1,7 @@
-use board::*;
 use board_analysis::*;
-use columns::*;
 use game_data::GameData;
-use gravity;
 use input::InputState;
 use point2::*;
-use std::collections::HashSet;
 
 use input::Buttons;
 pub fn update_game(game_data: &mut GameData, input: &InputState, time_delta: f64) -> bool {

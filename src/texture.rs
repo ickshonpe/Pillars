@@ -46,4 +46,16 @@ impl Texture {
         }
         Texture { id: texture_id }
     }
+
+    pub fn bind(&self) {
+        unsafe {
+            gl::BindTexture(gl::TEXTURE_2D, self.id);
+        }
+    }
+
+    pub fn release(&self) {
+        unsafe {
+            gl::BindTexture(gl::TEXTURE_2D, 0);
+        }
+    }
 }

@@ -1,7 +1,7 @@
-use graphics::{Color, TCVertex2, Vertex2};
+use graphics::{Color, V2T2C4, Vector2};
 
 pub struct Charset {
-    texture_vertices: Vec<[Vertex2; 4]>,
+    texture_vertices: Vec<[Vector2; 4]>,
 }
 
 impl Charset {
@@ -31,30 +31,27 @@ impl Charset {
 
     pub fn push_text_vertices(
         &self,
-        vertices: &mut Vec<TCVertex2>,
+        vertices: &mut Vec<V2T2C4>,
         text: &[u8],
-        position: Vertex2,
-        char_size: Vertex2,
+        position: Vector2,
+        char_size: Vector2,
         color: Color,
     ) {
-        //let mut vertices = Vec::with_capacity(text.len() * 6);
-        for i in 0..text.len() {
-            let char = text[i];
-            let x = char % 16;
-            let y = char / 16;
-            //let y = 15 - y;
-            let char = y * 16 + x;
-            let coords = self.texture_vertices[char as usize];
+        for (i, c) in text.iter().enumerate() {            
+            let x = c % 16;
+            let y = c / 16;
+            let out_c = y * 16 + x;
+            let coords = self.texture_vertices[out_c as usize];
             let min_x = position[0] + char_size[0] * i as f32;
             let min_y = position[1];
             let max_x = min_x + char_size[0];
             let max_y = min_y + char_size[1];
-            vertices.push(TCVertex2([min_x, min_y], coords[0], color));
-            vertices.push(TCVertex2([max_x, max_y], coords[2], color));
-            vertices.push(TCVertex2([min_x, max_y], coords[1], color));
-            vertices.push(TCVertex2([min_x, min_y], coords[0], color));
-            vertices.push(TCVertex2([max_x, max_y], coords[2], color));
-            vertices.push(TCVertex2([max_x, min_y], coords[3], color));
+            vertices.push(V2T2C4([min_x, min_y], coords[0], color));
+            vertices.push(V2T2C4([max_x, max_y], coords[2], color));
+            vertices.push(V2T2C4([min_x, max_y], coords[1], color));
+            vertices.push(V2T2C4([min_x, min_y], coords[0], color));
+            vertices.push(V2T2C4([max_x, max_y], coords[2], color));
+            vertices.push(V2T2C4([max_x, min_y], coords[3], color));
         }
     }
 }
