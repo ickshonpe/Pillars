@@ -164,6 +164,7 @@ impl GameState for Playing {
 
         if self.game_data.game_over {
             self.high_scores = self.high_scores.update(self.game_data.score);
+            ::high_score_file::write_high_score(self.high_scores.value());
 
             let gameover_pillars = {
                 let mut temp = Vec::new();
@@ -378,7 +379,8 @@ impl GameState for Grounded {
         }
 
         if self.game_data.game_over {
-            self.high_scores = self.high_scores.update(self.game_data.score);
+            self.high_scores = self.high_scores.update(self.game_data.score);   
+            ::high_score_file::write_high_score(self.high_scores.value());          
 
             let gameover_pillars = {
                 let mut temp = Vec::new();

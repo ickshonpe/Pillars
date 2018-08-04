@@ -299,8 +299,6 @@ fn main() {
         if input_state.down(input::Buttons::Quit) {
             break 'game_loop;
         }
-
-
     }
-    high_score_file::write_high_score(high_score);
+   
 }
