@@ -19,25 +19,22 @@ pub fn process_sdl_event(
             input_state.press(Buttons::Quit);
         }
         Event::KeyDown {
-            keycode, repeat, ..
+            keycode: Some(keycode), repeat, ..
         } => {
-            if !repeat {
-                if let Some(keycode) = keycode {
-                    if let Some(&button) = key_bindings.get(&keycode) {
-                        input_state.press(button);
-                    }
+            if !repeat {            
+                if let Some(&button) = key_bindings.get(&keycode) {
+                    input_state.press(button);
                 }
+                
             }
         }
         Event::KeyUp {
-            keycode, repeat, ..
+            keycode: Some(keycode), repeat, ..
         } => {
-            if !repeat {
-                if let Some(keycode) = keycode {
-                    if let Some(&button) = key_bindings.get(&keycode) {
-                        input_state.release(button);
-                    }
-                }
+            if !repeat {        
+                if let Some(&button) = key_bindings.get(&keycode) {
+                    input_state.release(button);
+                }                
             }
         }
         Event::ControllerDeviceAdded { which, .. } => {
