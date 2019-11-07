@@ -251,7 +251,7 @@ fn main() {
         size: [(window_size[0] - 1) as f32, (window_size[1] - 1) as f32],
     };
 
-    let mut game_state = Box::new(states::TitleScreen::new(high_score)) as Box<GameState> ;
+    let mut game_state = Box::new(states::TitleScreen::new(high_score)) as Box<dyn GameState> ;
 
     let ctx = graphics::GraphicsContext {
         window_rect,

@@ -1,6 +1,6 @@
 use point2::*;
 
-pub fn get_columns(board_size: &Size2) -> Vec<Vec<P2>> {
+pub fn get_columns(board_size: & dyn Size2) -> Vec<Vec<P2>> {
     let mut columns = Vec::with_capacity(board_size.width());
     for x in 0..board_size.width() {
         let mut ps: Vec<P2> = vec![];
@@ -12,7 +12,7 @@ pub fn get_columns(board_size: &Size2) -> Vec<Vec<P2>> {
     columns
 }
 
-pub fn get_rows(board_size: &Size2) -> Vec<Vec<P2>> {
+pub fn get_rows(board_size: &dyn Size2) -> Vec<Vec<P2>> {
     let mut rows = Vec::with_capacity(board_size.height());
     for y in 0..board_size.height() {
         let mut ps: Vec<P2> = vec![];
@@ -24,7 +24,7 @@ pub fn get_rows(board_size: &Size2) -> Vec<Vec<P2>> {
     rows
 }
 
-pub fn get_upwards_diagonals(board_size: &Size2) -> Vec<Vec<P2>> {
+pub fn get_upwards_diagonals(board_size: & dyn Size2) -> Vec<Vec<P2>> {
     let mut diagonals: Vec<Vec<P2>> = vec![];
     for x in 0..board_size.width() {
         let mut xs: Vec<P2> = vec![];
@@ -51,7 +51,7 @@ pub fn get_upwards_diagonals(board_size: &Size2) -> Vec<Vec<P2>> {
     diagonals
 }
 
-pub fn get_downwards_diagonals(board_size: &Size2) -> Vec<Vec<P2>> {
+pub fn get_downwards_diagonals(board_size: & dyn Size2) -> Vec<Vec<P2>> {
     let mut diagonals: Vec<Vec<P2>> = vec![];
     for x in 0..board_size.width() {
         let mut xs: Vec<P2> = vec![];

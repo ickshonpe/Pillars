@@ -50,7 +50,7 @@ pub fn compile_shader(shader_source: &CStr, shader_type: GLuint) -> Result<Shade
         let mut len: GLint = 0; // Dummy value
         unsafe {
             gl::GetShaderiv(id, gl::INFO_LOG_LENGTH, &mut len);
-        }
+        }        
         let mut error_buffer: CString = create_c_string_buffer(len as usize);
         unsafe {
             gl::GetShaderInfoLog(

@@ -52,8 +52,8 @@ pub fn process_sdl_event(
         }
 
         Event::ControllerButtonDown {
-            timestamp,
-            which,
+            timestamp: _,
+            which: _,
             button,
         } => {
             if let Some(&button) = controller_bindings.get(&button) {
@@ -61,8 +61,8 @@ pub fn process_sdl_event(
             }
         }
         Event::ControllerButtonUp {
-            timestamp,
-            which,
+            timestamp: _,
+            which: _,
             button,
         } => {
             if let Some(&button) = controller_bindings.get(&button) {

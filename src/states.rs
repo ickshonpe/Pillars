@@ -52,7 +52,7 @@ pub struct Playing {
     game_data: GameData,
 }
 pub struct Paused {
-    previous: Box<GameState>,
+    previous: Box<dyn GameState>,
 }
 
 pub struct GameOver {
